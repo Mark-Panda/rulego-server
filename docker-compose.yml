@@ -25,6 +25,9 @@ services:
       - "9099:9091"
     volumes:
       - ./volumes/rulego_data:/app/data
+    environment:
+      - RULESERVER=:9091
+      - RULEMCP_LOAD_COMPONENTS_AS_TOOL=false
     restart: always
 networks:
   rulego:
