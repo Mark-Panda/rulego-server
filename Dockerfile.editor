@@ -9,7 +9,7 @@ RUN rm -rf /usr/share/nginx/html/*
 COPY editor /usr/share/nginx/html/
 # 将前端构建结果复制到 Nginx 的默认目录
 # COPY --from=builder /app/frontend/dist /usr/share/nginx/html
-
+RUN sed -i 's/127.0.0.1:9090/127.0.0.1:9099/g' "/usr/share/nginx/html/config/config.js"
 # 暴露端口
 EXPOSE 80
 
