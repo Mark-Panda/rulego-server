@@ -3,6 +3,13 @@ package service
 import (
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"path"
+	"path/filepath"
+	"sync"
+	"time"
+
 	"github.com/dop251/goja"
 	"github.com/rulego/rulego"
 	"github.com/rulego/rulego-server/config"
@@ -16,12 +23,8 @@ import (
 	"github.com/rulego/rulego/utils/fs"
 	"github.com/rulego/rulego/utils/json"
 	"github.com/rulego/rulego/utils/maps"
-	"log"
-	"os"
-	"path"
-	"path/filepath"
-	"sync"
-	"time"
+
+	_ "github.com/rulego/rulego-server/internal/components"
 )
 
 var UserRuleEngineServiceImpl *UserRuleEngineService
