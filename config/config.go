@@ -79,6 +79,16 @@ type Config struct {
 	UserNamePasswordMap types.Properties `ini:"-"`
 	// API key和用户名映射
 	ApiKeyUserNameMap types.Properties `ini:"-"`
+	// PostGre 数据库配置
+	PostGre PostGre `ini:"postgre"`
+}
+
+type PostGre struct {
+	User     string `ini:"user" env:"RULEGO_POSTGRE_USER"`         // 必须
+	Password string `ini:"password" env:"RULEGO_POSTGRE_PASSWORD"` // 必须
+	Host     string `ini:"host" env:"RULEGO_POSTGRE_HOST"`         // 必须
+	Port     int32  `ini:"port" env:"RULEGO_POSTGRE_PORT"`         // 可选，默认5432
+	DBname   string `ini:"dbname" env:"RULEGO_POSTGRE_DBNAME"`     // 必须
 }
 
 type Pprof struct {

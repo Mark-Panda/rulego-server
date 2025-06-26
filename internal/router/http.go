@@ -2,6 +2,9 @@ package router
 
 import (
 	"errors"
+	"net/http"
+	"strings"
+
 	"github.com/rulego/rulego"
 	"github.com/rulego/rulego-server/config"
 	"github.com/rulego/rulego-server/config/logger"
@@ -11,8 +14,6 @@ import (
 	"github.com/rulego/rulego/endpoint"
 	"github.com/rulego/rulego/endpoint/rest"
 	"github.com/rulego/rulego/node_pool"
-	"net/http"
-	"strings"
 )
 
 const (
