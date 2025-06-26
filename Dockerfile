@@ -15,6 +15,7 @@ RUN mkdir -p /app/logs
 # 从后端构建阶段复制二进制文件
 COPY --from=backend-builder /root/bin /app
 COPY --from=backend-builder /root/config.conf /app/config.conf
+COPY editor /app/editor
 # 暴露服务端口
 EXPOSE 9091
 

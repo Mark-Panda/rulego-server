@@ -241,6 +241,25 @@ func (c *Config) LoadFromEnv() {
 	if value := os.Getenv("RULEGO_MCP_EXCLUDE_COMPONENTS"); value != "" {
 		c.MCP.ExcludeComponents = value
 	}
+
+	// PostGre配置
+	if value := os.Getenv("RULEGO_POSTGRE_USER"); value != "" {
+		c.PostGre.User = value
+	}
+	if value := os.Getenv("RULEGO_POSTGRE_PASSWORD"); value != "" {
+		c.PostGre.Password = value
+	}
+	if value := os.Getenv("RULEGO_POSTGRE_HOST"); value != "" {
+		c.PostGre.Host = value
+	}
+	if value := os.Getenv("RULEGO_POSTGRE_PORT"); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			c.PostGre.Port = int32(intValue)
+		}
+	}
+	if value := os.Getenv("RULEGO_POSTGRE_DBNAME"); value != "" {
+		c.PostGre.DBname = value
+	}
 }
 
 func (c *Config) InitUserMap() {
