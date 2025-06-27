@@ -45,7 +45,7 @@ ui/.vscode
 coverage.html
 
 data/
-editor/
+#editor/
 cmd/server/rulego-server
 
 volumes/

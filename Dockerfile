@@ -11,11 +11,17 @@ RUN mkdir -p bin/ && GOPROXY="https://goproxy.cn,direct"  go build -ldflags '-w 
 FROM alpine:3.21.3
 WORKDIR /app
 
+RUN apk update && apk add --no-cache ca-certificates && \
+    apk add tzdata && \
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone
+
 RUN mkdir -p /app/logs
 # 从后端构建阶段复制二进制文件
 COPY --from=backend-builder /root/bin /app
 COPY --from=backend-builder /root/config.conf /app/config.conf
 COPY editor /app/editor
+
 # 暴露服务端口
 EXPOSE 9091
 
