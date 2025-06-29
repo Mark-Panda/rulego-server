@@ -14,7 +14,7 @@ services:
       - RULEGO_SERVER=:9091
       - RULEGO_MCP_LOAD_COMPONENTS_AS_TOOL=true
       - RULEGO_MCP_LOAD_CHAINS_AS_TOOL=false
-      - RULEGO_MCP_EXCLUDE_COMPONENTS=x/otel,x/wukongimSender,x/beanstalkdTube,x/beanstalkdWorker,x/natsClient,x/rabbitmqClient,x/opengeminiWrite,x/opengeminiQuery,ai/createImage,sendEmail,ssh,net,mqttClient,ref,ai/llm,x/redisPub,x/mongodbClient,x/kafkaProducer,exec,comment,x/luaTransform
+      - RULEGO_MCP_EXCLUDE_COMPONENTS=x/otel,x/wukongimSender,x/beanstalkdTube,x/beanstalkdWorker,x/natsClient,x/rabbitmqClient,x/opengeminiWrite,x/opengeminiQuery,ai/createImage,sendEmail,ssh,net,mqttClient,ref,ai/llm,x/redisPub,x/mongodbClient,x/kafkaProducer,exec,comment,x/luaTransform,msgTypeSwitch,groupFilter,cacheSet,cacheGet,cacheDelete
       - RULEGO_DEBUG=true
       - RULEGO_LOG_FILE=./logs/rulego.log
       - RULEGO_SAVE_RUN_LOG=true
