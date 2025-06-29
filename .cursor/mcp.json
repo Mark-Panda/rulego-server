@@ -1,0 +1,17 @@
+{
+    "mcpServers": {
+      "rulego": {
+        "url": "http://127.0.0.1:9099/api/v1/mcp/2af255ea5618467d914c67a8beeca31d/sse"
+      },
+      "rulego-postgres": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-postgres",
+          "postgresql://rulego:rulego@127.0.0.1:5432/rulego"
+        ],
+        "env": {}
+      }
+    }
+  }
+  
