@@ -20,6 +20,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"path"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"sync"
+
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/rulego/rulego-server/config"
@@ -29,11 +35,6 @@ import (
 	"github.com/rulego/rulego/utils/dsl"
 	"github.com/rulego/rulego/utils/fs"
 	"github.com/rulego/rulego/utils/str"
-	"path"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"sync"
 )
 
 // McpService 自定义组件服务
