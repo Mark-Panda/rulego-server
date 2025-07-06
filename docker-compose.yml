@@ -28,7 +28,7 @@ services:
       - postgres-db
     restart: always
   postgres-db:
-    image: postgres:latest
+    image: postgres:15
     restart: always
     ports:
       - "5432:5432"
@@ -37,5 +37,6 @@ services:
       POSTGRES_PASSWORD: rulego
     volumes:
       - ./volumes/database_postgres-data:/var/lib/postgresql/data
+      - ./sql/:/docker-entrypoint-initdb.d/
 networks:
   rulego:
