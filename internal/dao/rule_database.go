@@ -87,3 +87,19 @@ func (d *RuleDao) ListToDataBase(username, keywords string, root *bool, disabled
 	}
 	return ruleChains, totalCount, nil
 }
+
+func (d *RuleDao) GetAll(username string) ([]types.RuleChain, error) {
+	var ruleChains []types.RuleChain
+	list, err := GetAllLoadRegulation(username)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range list {
+		var ruleChainItem types.RuleChain
+		if err := json.Unmarshal([]byte(item.RuleConfig), &ruleChainItem); err != nil {
+			continue
+		}
+		ruleChains = append(ruleChains, ruleChainItem)
+	}
+	return ruleChains, nil
+}

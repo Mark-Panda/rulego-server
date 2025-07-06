@@ -593,8 +593,9 @@ func (s *RuleEngineService) InitRuleGo(logger *log.Logger, workspacePath string,
 	}
 
 	// 加载规则链
-	rulesPath := path.Join(workspacePath, constants.DirWorkflows, username, constants.DirWorkflowsRule)
-	_ = s.loadRules(rulesPath)
+	_ = s.loadAllRulesFromDatabase(username)
+	// rulesPath := path.Join(workspacePath, constants.DirWorkflows, username, constants.DirWorkflowsRule)
+	// _ = s.loadRules(rulesPath)
 }
 
 // 加载js
@@ -671,6 +672,28 @@ func (s *RuleEngineService) loadRules(folderPath string) error {
 		s.logger.Printf("%s main chain id is empty", s.username)
 	}
 
+	return nil
+}
+
+// 从数据库中加载所有规则链
+func (s *RuleEngineService) loadAllRulesFromDatabase(username string) error {
+	rules, err := s.ruleDao.GetAll(username)
+	if err != nil {
+		return err
+	}
+	for _, rule := range rules {
+		if err := s.Load(rule.RuleChain.ID); err != nil {
+			s.logger.Printf("load rule chain id:%s error: %s", rule.RuleChain.ID, err.Error())
+		}
+	}
+	// 加载主规则链
+	if mainChainId := s.userSettingDao.Get(constants.SettingKeyMainChainId); mainChainId != "" {
+		if err := s.SetMainChainId(mainChainId); err != nil {
+			s.logger.Printf("load %s main rule chain error: %s", s.username, err.Error())
+		}
+	} else {
+		s.logger.Printf("%s main chain id is empty", s.username)
+	}
 	return nil
 }
 

@@ -7,9 +7,9 @@ import (
 )
 
 // 查询所有需要加载的规则链
-func GetAllLoadRegulation() ([]model.Regulation, error) {
+func GetAllLoadRegulation(username string) ([]model.Regulation, error) {
 	re := make([]model.Regulation, 0)
-	err := model.DBClient.Client.Model(&model.Regulation{}).Find(&re).Error
+	err := model.DBClient.Client.Model(&model.Regulation{}).Where("disabled = ? and user_name = ?", false, username).Find(&re).Error
 	return re, err
 }
 
