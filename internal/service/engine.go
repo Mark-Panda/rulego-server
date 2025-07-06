@@ -14,6 +14,7 @@ import (
 	"github.com/rulego/rulego"
 	"github.com/rulego/rulego-server/config"
 	"github.com/rulego/rulego-server/config/logger"
+	_ "github.com/rulego/rulego-server/internal/components"
 	"github.com/rulego/rulego-server/internal/constants"
 	"github.com/rulego/rulego-server/internal/dao"
 	"github.com/rulego/rulego/api/types"
