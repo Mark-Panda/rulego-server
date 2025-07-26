@@ -7,6 +7,8 @@ import { ElMessage } from 'element-plus';
 import JsonEditor from '@src/components/json-editor/json-editor.vue';
 
 const tableData = ref([]);
+const expandedRows = ref(new Set());
+const detailData = ref({});
 const paginationState = ref({
   page: 1,
   size: 10,
@@ -29,6 +31,7 @@ async function refreshTableData() {
     const params = {
       size: paginationState.value.size,
       page: paginationState.value.page,
+      current: paginationState.value.page,
     };
     
     if (searchForm.value.chainId) {
@@ -54,34 +57,58 @@ async function refreshTableData() {
       if (res && res.items && Array.isArray(res.items)) {
         console.log('找到items数组，处理日志数据');
         
-        // 提取所有日志项
-        const processedData = [];
+        // 清空详情数据
+        detailData.value = {};
         
-        // 遍历每个工作流执行记录
+        // 处理主表数据
+        const mainData = res.items.map(item => {
+          // 计算总执行时间
+          const executionTime = item.endTs && item.startTs ? item.endTs - item.startTs : 0;
+          
+          // 计算节点数量
+          const nodeCount = item.logs && Array.isArray(item.logs) ? item.logs.length : 0;
+          
+          // 检查是否有错误
+          let hasError = false;
+          if (item.logs && Array.isArray(item.logs)) {
+            hasError = item.logs.some(log => log.err && log.err.length > 0);
+          }
+          
+          // 构建主表记录
+          return {
+            id: item.id,
+            ts: item.startTs,
+            chainId: item.ruleChain?.id || '',
+            chainName: item.ruleChain?.name || '',
+            executionTime: executionTime,
+            nodeCount: nodeCount,
+            hasError: hasError,
+            startTs: item.startTs,
+            endTs: item.endTs
+          };
+        });
+        
+        // 处理详情数据
         res.items.forEach(item => {
           if (item.logs && Array.isArray(item.logs)) {
-            // 遍历每个节点的日志
-            item.logs.forEach(log => {
-              // 构建日志记录
-              processedData.push({
-                ts: log.startTs,
-                chainId: item.ruleChain?.id || '',
-                chainName: item.ruleChain?.name || '',
-                nodeId: log.nodeId,
-                flowType: log.relationType,
-                msg: log.inMsg || {},
-                outMsg: log.outMsg || {},
-                relationType: log.relationType,
-                err: log.err,
-                startTs: log.startTs,
-                endTs: log.endTs
-              });
-            });
+            // 为每个主记录创建详情数据数组
+            detailData.value[item.id] = item.logs.map(log => ({
+              nodeId: log.nodeId,
+              relationType: log.relationType,
+              msg: log.inMsg || {},
+              outMsg: log.outMsg || {},
+              err: log.err,
+              startTs: log.startTs,
+              endTs: log.endTs,
+              executionTime: log.endTs && log.startTs ? log.endTs - log.startTs : 0
+            }));
           }
         });
         
-        console.log('处理后的日志数据:', processedData);
-        tableData.value = processedData;
+        console.log('处理后的主表数据:', mainData);
+        console.log('处理后的详情数据:', detailData.value);
+        
+        tableData.value = mainData;
         paginationState.value.total = res.total || 0;
       } else {
         console.warn('未识别的数据结构:', res);
@@ -109,9 +136,26 @@ async function refreshTableData() {
   }
 }
 
-function paginationChangeHandler(currentPage, pageSize) {
-  paginationState.value.page = currentPage;
-  paginationState.value.size = pageSize;
+function toggleRowExpansion(row) {
+  const rowId = row.id;
+  if (expandedRows.value.has(rowId)) {
+    expandedRows.value.delete(rowId);
+  } else {
+    expandedRows.value.add(rowId);
+  }
+}
+
+function isRowExpanded(row) {
+  return expandedRows.value.has(row.id);
+}
+
+function handleSizeChange(val) {
+  paginationState.value.size = val;
+  refreshTableData();
+}
+
+function handleCurrentChange(val) {
+  paginationState.value.page = val;
   refreshTableData();
 }
 
@@ -296,6 +340,7 @@ onMounted(() => {
         </el-button>
       </div>
       
+      <!-- 主表 -->
       <el-table
         v-loading="loading"
         height="calc(100vh - 350px)"
@@ -303,15 +348,169 @@ onMounted(() => {
         :data="tableData"
         :border="true"
         stripe
-        @row-click="(row) => console.log('点击行:', row)"
+        row-key="id"
       >
+        <!-- 展开按钮列 -->
+        <el-table-column type="expand" width="50">
+          <template #default="props">
+            <!-- 子表 -->
+            <div class="p-4 bg-gray-50">
+              <h4 class="text-lg font-medium mb-3">节点执行详情</h4>
+              <el-table
+                :data="detailData[props.row.id] || []"
+                size="small"
+                border
+                stripe
+                style="width: 100%"
+              >
+                <el-table-column prop="nodeId" label="节点ID" min-width="140" align="left">
+                  <template #default="scope">
+                    <el-tooltip
+                      v-if="scope.row.nodeId"
+                      effect="dark"
+                      :content="scope.row.nodeId"
+                      placement="top"
+                    >
+                      <span>
+                        {{
+                          scope.row.nodeId && scope.row.nodeId.length > 12
+                            ? scope.row.nodeId.substring(0, 12) + '...'
+                            : scope.row.nodeId
+                        }}
+                      </span>
+                    </el-tooltip>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="relationType" label="关系类型" min-width="120" align="left" />
+                <el-table-column label="消息ID" min-width="180" align="left">
+                  <template #default="scope">
+                    <el-tooltip
+                      v-if="scope.row.msg && scope.row.msg.id"
+                      effect="dark"
+                      :content="scope.row.msg.id"
+                      placement="top"
+                    >
+                      <span>
+                        {{
+                          scope.row.msg && scope.row.msg.id && scope.row.msg.id.length > 16
+                            ? scope.row.msg.id.substring(0, 16) + '...'
+                            : (scope.row.msg ? scope.row.msg.id : '')
+                        }}
+                      </span>
+                    </el-tooltip>
+                  </template>
+                </el-table-column>
+                <el-table-column label="消息类型" min-width="150" align="left">
+                  <template #default="scope">
+                    <el-tooltip
+                      v-if="scope.row.msg && scope.row.msg.type"
+                      effect="dark"
+                      :content="scope.row.msg.type"
+                      placement="top"
+                    >
+                      <span>
+                        {{
+                          scope.row.msg && scope.row.msg.type && scope.row.msg.type.length > 12
+                            ? scope.row.msg.type.substring(0, 12) + '...'
+                            : (scope.row.msg ? scope.row.msg.type : '')
+                        }}
+                      </span>
+                    </el-tooltip>
+                  </template>
+                </el-table-column>
+                <el-table-column label="输入数据" width="80" align="center">
+                  <template #default="scope">
+                    <el-tooltip 
+                      v-if="scope.row.msg && scope.row.msg.data"
+                      effect="dark" 
+                      content="查看输入数据" 
+                      placement="top"
+                    >
+                      <el-button
+                        @click="showDataHandler(scope.row.msg)"
+                        :link="true"
+                      >
+                        <el-icon><el-icon-more-filled /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                  </template>
+                </el-table-column>
+                <el-table-column label="输出数据" width="80" align="center">
+                  <template #default="scope">
+                    <el-tooltip 
+                      v-if="scope.row.outMsg && scope.row.outMsg.data"
+                      effect="dark" 
+                      content="查看输出数据" 
+                      placement="top"
+                    >
+                      <el-button
+                        @click="showDataHandler(scope.row.outMsg)"
+                        :link="true"
+                      >
+                        <el-icon><el-icon-more-filled /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                  </template>
+                </el-table-column>
+                <el-table-column
+                  label="元数据"
+                  width="80"
+                  align="center"
+                >
+                  <template #default="scope">
+                    <el-tooltip 
+                      v-if="scope.row.msg && scope.row.msg.metadata"
+                      effect="dark" 
+                      content="查看元数据" 
+                      placement="top"
+                    >
+                      <el-button
+                        @click="showMetadataHandler(scope.row.msg)"
+                        :link="true"
+                      >
+                        <el-icon><el-icon-more-filled /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                  </template>
+                </el-table-column>
+                <el-table-column label="错误" width="80" align="center">
+                  <template #default="scope">
+                    <el-tooltip
+                      v-if="scope.row.err"
+                      effect="dark"
+                      :content="scope.row.err"
+                      placement="top"
+                    >
+                      <el-button
+                        @click="showErrorHandler(scope.row.err)"
+                        :link="true"
+                        type="danger"
+                        :disabled="!scope.row.err"
+                      >
+                        <el-icon><el-icon-warning /></el-icon>
+                      </el-button>
+                    </el-tooltip>
+                  </template>
+                </el-table-column>
+                <el-table-column label="执行时间(ms)" min-width="120" align="left">
+                  <template #default="scope">
+                    <span>{{ scope.row.executionTime || '-' }}</span>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </template>
+        </el-table-column>
+        
+        <!-- 主表列 -->
         <el-table-column
           prop="ts"
-          label="事件时间"
-          width="160"
+          label="执行时间"
+          min-width="180"
           :formatter="tsFormatter"
+          align="left"
         />
-        <el-table-column label="工作流" width="160">
+        <el-table-column label="工作流" min-width="180" align="left">
           <template #default="scope">
             <el-tooltip
               v-if="scope.row.chainId"
@@ -322,146 +521,35 @@ onMounted(() => {
               <span>
                 {{
                   scope.row.chainName || 
-                  (scope.row.chainId && scope.row.chainId.length > 10
-                    ? scope.row.chainId.substring(0, 10) + '...'
+                  (scope.row.chainId && scope.row.chainId.length > 12
+                    ? scope.row.chainId.substring(0, 12) + '...'
                     : scope.row.chainId)
                 }}
               </span>
             </el-tooltip>
           </template>
         </el-table-column>
-        <el-table-column prop="nodeId" label="节点ID" width="120">
+        <el-table-column prop="nodeCount" label="节点数" min-width="100" align="left" />
+        <el-table-column label="状态" width="100" align="center">
           <template #default="scope">
-            <el-tooltip
-              v-if="scope.row.nodeId"
-              effect="dark"
-              :content="scope.row.nodeId"
-              placement="top"
-            >
-              <span>
-                {{
-                  scope.row.nodeId && scope.row.nodeId.length > 10
-                    ? scope.row.nodeId.substring(0, 10) + '...'
-                    : scope.row.nodeId
-                }}
-              </span>
-            </el-tooltip>
+            <el-tag :type="scope.row.hasError ? 'danger' : 'success'">
+              {{ scope.row.hasError ? '失败' : '成功' }}
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="relationType" label="关系类型" width="90" />
-        <el-table-column label="消息ID" width="130">
+        <el-table-column label="执行时间(ms)" min-width="120" align="left">
           <template #default="scope">
-            <el-tooltip
-              v-if="scope.row.msg && scope.row.msg.id"
-              effect="dark"
-              :content="scope.row.msg.id"
-              placement="top"
-            >
-              <span>
-                {{
-                  scope.row.msg && scope.row.msg.id && scope.row.msg.id.length > 14
-                    ? scope.row.msg.id.substring(0, 14) + '...'
-                    : (scope.row.msg ? scope.row.msg.id : '')
-                }}
-              </span>
-            </el-tooltip>
+            <span>{{ scope.row.executionTime || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="消息类型" width="130">
+        <el-table-column label="操作" width="120" align="center">
           <template #default="scope">
-            <el-tooltip
-              v-if="scope.row.msg && scope.row.msg.type"
-              effect="dark"
-              :content="scope.row.msg.type"
-              placement="top"
+            <el-button
+              size="small"
+              @click="toggleRowExpansion(scope.row)"
             >
-              <span>
-                {{
-                  scope.row.msg && scope.row.msg.type && scope.row.msg.type.length > 10
-                    ? scope.row.msg.type.substring(0, 10) + '...'
-                    : (scope.row.msg ? scope.row.msg.type : '')
-                }}
-              </span>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-        <el-table-column label="输入数据" width="60" align="center">
-          <template #default="scope">
-            <el-tooltip 
-              v-if="scope.row.msg && scope.row.msg.data"
-              effect="dark" 
-              content="查看输入数据" 
-              placement="top"
-            >
-              <el-button
-                @click="showDataHandler(scope.row.msg)"
-                :link="true"
-              >
-                <el-icon><el-icon-more-filled /></el-icon>
-              </el-button>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-        <el-table-column label="输出数据" width="60" align="center">
-          <template #default="scope">
-            <el-tooltip 
-              v-if="scope.row.outMsg && scope.row.outMsg.data"
-              effect="dark" 
-              content="查看输出数据" 
-              placement="top"
-            >
-              <el-button
-                @click="showDataHandler(scope.row.outMsg)"
-                :link="true"
-              >
-                <el-icon><el-icon-more-filled /></el-icon>
-              </el-button>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-        <el-table-column
-          label="元数据"
-          width="60"
-          align="center"
-        >
-          <template #default="scope">
-            <el-tooltip 
-              v-if="scope.row.msg && scope.row.msg.metadata"
-              effect="dark" 
-              content="查看元数据" 
-              placement="top"
-            >
-              <el-button
-                @click="showMetadataHandler(scope.row.msg)"
-                :link="true"
-              >
-                <el-icon><el-icon-more-filled /></el-icon>
-              </el-button>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-        <el-table-column label="错误" width="80">
-          <template #default="scope">
-            <el-tooltip
-              v-if="scope.row.err"
-              effect="dark"
-              content="查看错误"
-              placement="top"
-            >
-              <el-button
-                @click="showErrorHandler(scope.row.err)"
-                :link="true"
-                type="danger"
-                :disabled="!scope.row.err"
-              >
-                <el-icon><el-icon-warning /></el-icon>
-              </el-button>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-        <el-table-column label="执行时间(ms)" width="100" align="right">
-          <template #default="scope">
-            <span>{{ scope.row.endTs && scope.row.startTs ? scope.row.endTs - scope.row.startTs : '-' }}</span>
+              查看详情
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -475,7 +563,8 @@ onMounted(() => {
           :page-sizes="paginationState.pageSizes"
           :total="paginationState.total"
           :background="true"
-          @change="paginationChangeHandler"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
         ></el-pagination>
       </div>
     </div>
