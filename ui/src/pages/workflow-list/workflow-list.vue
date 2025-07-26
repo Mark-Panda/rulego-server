@@ -113,7 +113,6 @@ onMounted(() => {
       <div class="flex items-center space-x-2">
         <el-input
           placeholder="搜索应用名称"
-          :prefix-icon="'el-icon-search'"
           :clearable="true"
           class="w-[220px]"
           v-model="formState.keywords"
