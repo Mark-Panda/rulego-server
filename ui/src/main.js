@@ -4,6 +4,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue';
 import App from '@src/app.vue';
 import router from '@src/router';
 import store from '@src/store';
+import { initTheme } from '@src/utils/theme';
 
 import '@src/style/tailwind.css';
 import 'element-plus/dist/index.css';
@@ -11,6 +12,9 @@ import '@logicflow/core/lib/style/index.css';
 import '@logicflow/extension/lib/style/index.css';
 import '@src/style/logic-flow.css';
 import '@src/style/element-plus.css';
+
+// 初始化主题
+initTheme();
 
 const app = createApp(App);
 

@@ -103,28 +103,51 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex h-full flex-col">
-    <div class="flex flex-none items-center justify-between p-4">
-      <div>
-        <el-button @click="openCreateAppModalHandler">
+  <div class="flex h-full flex-col rounded-lg bg-white dark:bg-gray-800 shadow-sm">
+    <!-- 页面标题和操作按钮 -->
+    <div class="flex flex-none items-center justify-between border-b border-gray-100 dark:border-gray-700 p-4">
+      <div class="flex items-center">
+        <h1 class="text-xl font-medium text-gray-800 dark:text-gray-200">我的应用</h1>
+        <el-tag type="info" effect="plain" class="ml-2">{{ paginationState.total }} 个应用</el-tag>
+      </div>
+      <div class="flex items-center space-x-2">
+        <el-input
+          placeholder="搜索应用名称"
+          :prefix-icon="'el-icon-search'"
+          :clearable="true"
+          class="w-[220px]"
+          v-model="formState.keywords"
+          @keyup.enter="refreshData"
+        >
+          <template #prefix>
+            <el-icon><el-icon-search /></el-icon>
+          </template>
+        </el-input>
+        <el-button type="primary" @click="openCreateAppModalHandler">
+          <el-icon class="mr-1"><el-icon-plus /></el-icon>
           <span>创建应用</span>
         </el-button>
         <el-button @click="importHandler">
+          <el-icon class="mr-1"><el-icon-upload /></el-icon>
           <span>导入应用</span>
         </el-button>
       </div>
-      <div class="w-[200px] flex-none">
-        <el-input
-          placeholder="请输入工作流名称"
-          :clearable="true"
-          v-model="formState.keywords"
-          @keyup.enter="refreshData"
-        ></el-input>
-      </div>
     </div>
-    <div class="flex-grow overflow-auto">
+    
+    <!-- 应用列表 -->
+    <div class="flex-grow overflow-auto p-4">
       <el-scrollbar class="h-full w-full">
-        <div class="flex flex-wrap content-start pl-4">
+        <div v-if="data.length === 0" class="flex h-64 w-full items-center justify-center">
+          <div class="text-center">
+            <el-icon class="text-4xl text-gray-300 dark:text-gray-600"><el-icon-box /></el-icon>
+            <p class="mt-2 text-gray-500 dark:text-gray-400">暂无应用，点击"创建应用"开始</p>
+            <el-button class="mt-4" type="primary" @click="openCreateAppModalHandler">
+              <el-icon class="mr-1"><el-icon-plus /></el-icon>
+              <span>创建应用</span>
+            </el-button>
+          </div>
+        </div>
+        <div v-else class="flex flex-wrap content-start">
           <app-card
             v-for="item in data"
             :key="item.ruleChain.id"
@@ -153,7 +176,9 @@ onMounted(() => {
         </div>
       </el-scrollbar>
     </div>
-    <div class="flex flex-none justify-end p-4">
+    
+    <!-- 分页 -->
+    <div class="flex flex-none justify-end border-t border-gray-100 dark:border-gray-700 p-4">
       <el-pagination
         v-model:current-page="paginationState.page"
         v-model:page-size="paginationState.size"
@@ -165,6 +190,8 @@ onMounted(() => {
         @change="paginationChangeHandler"
       ></el-pagination>
     </div>
+    
+    <!-- 模态框 -->
     <create-app-modal
       ref="createAppModalRef"
       @success="createAppSuccessHandler"

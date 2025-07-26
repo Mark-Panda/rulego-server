@@ -6,3 +6,51 @@
 .run-drawer .el-drawer__header {
   margin: 0;
 }
+
+/* 暗黑模式样式优化 */
+.dark .el-card {
+  --el-card-bg-color: var(--el-bg-color-overlay);
+  border-color: var(--el-border-color-light);
+}
+
+.dark .el-button--default {
+  --el-button-bg-color: var(--el-bg-color-overlay);
+  --el-button-border-color: var(--el-border-color);
+  --el-button-hover-bg-color: var(--el-fill-color-light);
+  --el-button-hover-text-color: var(--el-color-primary);
+}
+
+.dark .el-input__wrapper {
+  background-color: var(--el-bg-color-overlay);
+}
+
+.dark .el-pagination {
+  --el-pagination-button-bg-color: var(--el-bg-color-overlay);
+  --el-pagination-hover-color: var(--el-color-primary);
+}
+
+.dark .el-dropdown-menu {
+  --el-bg-color-overlay: var(--el-bg-color);
+}
+
+.dark .el-table {
+  --el-table-header-bg-color: var(--el-bg-color);
+  --el-table-row-hover-bg-color: var(--el-fill-color-light);
+  --el-table-border-color: var(--el-border-color-lighter);
+  --el-table-fixed-box-shadow: var(--el-box-shadow-light);
+  --el-table-bg-color: var(--el-bg-color-overlay);
+  --el-table-tr-bg-color: var(--el-bg-color-overlay);
+}
+
+.dark .el-dialog {
+  --el-dialog-bg-color: var(--el-bg-color);
+  --el-dialog-border-color: var(--el-border-color);
+}
+
+.dark .el-drawer {
+  --el-drawer-bg-color: var(--el-bg-color);
+}
+
+.dark .el-tabs {
+  --el-tabs-header-bg-color: var(--el-bg-color);
+}
