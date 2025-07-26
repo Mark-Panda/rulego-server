@@ -13,6 +13,11 @@ const routes = [
         component: () => import('@src/pages/workflow-list/workflow-list.vue'),
       },
       {
+        path: '/runtime-logs',
+        name: 'runtime-logs',
+        component: () => import('@src/pages/runtime-logs/runtime-logs.vue'),
+      },
+      {
         path: '/share-node-list',
         name: 'share-node-list',
         component: () =>

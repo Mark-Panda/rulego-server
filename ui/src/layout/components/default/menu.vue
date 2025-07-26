@@ -41,10 +41,10 @@ const menuItems = [
         implemented: true
       },
       { 
-        index: 'runs', 
+        index: 'runtime-logs', 
         icon: 'el-icon-video-play', 
         label: '运行日志',
-        implemented: false
+        implemented: true
       }
     ]
   },

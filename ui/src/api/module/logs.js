@@ -5,3 +5,10 @@ export function getLogsDebug(params) {
     params,
   });
 }
+
+export function getRuntimeLogs(params) {
+  return request.get('/logs/runs', {
+    params,
+  });
+}
+
