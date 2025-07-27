@@ -9,17 +9,17 @@ require (
 	github.com/dromara/carbon/v2 v2.6.8
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/mark3labs/mcp-go v0.18.0
-	github.com/rulego/rulego v0.31.4-0.20250625103030-e9c66e03ade3
-	github.com/rulego/rulego-components v0.31.1-0.20250625103157-8e233ee08959
+	github.com/rulego/rulego v0.32.0
+	github.com/rulego/rulego-components v0.32.0
 	github.com/rulego/rulego-components-ai v0.31.1
 	github.com/rulego/rulego-components-ci v0.31.1-0.20250602161121-89f21f4c54fe
 	github.com/rulego/rulego-components-etl v0.29.1-0.20250602160310-2d30a072f03b
-	github.com/rulego/rulego-components-iot v0.29.1-0.20250604064742-4832b0c010d7
+	github.com/rulego/rulego-components-iot v0.32.0
 	github.com/silenceper/log v0.0.0-20171204144354-e5ac7fa8a76a
 	go.uber.org/zap v1.27.0
 	gopkg.in/ini.v1 v1.67.0
 	gorm.io/driver/postgres v1.6.0
-	gorm.io/gorm v1.30.0
+	gorm.io/gorm v1.30.1
 )
 
 require (

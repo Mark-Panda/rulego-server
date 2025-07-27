@@ -1,6 +1,10 @@
 package controller
 
 import (
+	"net/http"
+	"strconv"
+	"strings"
+
 	"github.com/rulego/rulego-server/config"
 	"github.com/rulego/rulego-server/config/logger"
 	"github.com/rulego/rulego-server/internal/constants"
@@ -13,9 +17,6 @@ import (
 	"github.com/rulego/rulego/node_pool"
 	"github.com/rulego/rulego/utils/json"
 	"github.com/rulego/rulego/utils/str"
-	"net/http"
-	"strconv"
-	"strings"
 )
 
 var Node = &node{}
@@ -75,8 +76,8 @@ func (c *node) ListNodePool(url string) endpointApi.Router {
 		if s, ok := service.UserRuleEngineServiceImpl.Get(username); ok {
 			var result = map[string][]*types.RuleNode{}
 			var err error
-			if s.GetRuleConfig().NetPool != nil {
-				result, err = s.GetRuleConfig().NetPool.GetAllDef()
+			if s.GetRuleConfig().NodePool != nil {
+				result, err = s.GetRuleConfig().NodePool.GetAllDef()
 			}
 			if err != nil {
 				exchange.Out.SetStatusCode(http.StatusBadRequest)

@@ -1,17 +1,19 @@
 package dao
 
 import (
-	"github.com/rulego/rulego-server/config"
-	"github.com/rulego/rulego-server/config/logger"
-	"github.com/rulego/rulego-server/internal/constants"
-	"github.com/rulego/rulego-server/internal/utils/file"
-	"github.com/rulego/rulego/api/types"
-	"github.com/rulego/rulego/utils/fs"
-	"github.com/rulego/rulego/utils/json"
 	"os"
 	"path"
 	"path/filepath"
 	"time"
+
+	"github.com/rulego/rulego-server/config"
+	"github.com/rulego/rulego-server/config/logger"
+	"github.com/rulego/rulego-server/internal/constants"
+	"github.com/rulego/rulego-server/internal/model"
+	"github.com/rulego/rulego-server/internal/utils/file"
+	"github.com/rulego/rulego/api/types"
+	"github.com/rulego/rulego/utils/fs"
+	"github.com/rulego/rulego/utils/json"
 )
 
 type EventDao struct {
@@ -36,17 +38,39 @@ func (s *EventDao) SaveRunLog(username string, ctx types.RuleContext, snapshot t
 	snapshot.Id = time.Now().Format("20060102150405000") + "_" + snapshot.Id
 	//保存到文件
 	if byteV, err := json.Marshal(snapshot); err != nil {
-		logger.Logger.Printf("dao/EventDao:SaveRunLog marshal error", err)
+		logger.Logger.Printf("dao/EventDao:SaveRunLog marshal error %v", err)
 		return err
 	} else {
 		//v, _ := json.Format(byteV)
 		//保存规则链到文件
 		if err = fs.SaveFile(filepath.Join(pathStr, snapshot.Id), byteV); err != nil {
-			logger.Logger.Printf("dao/EventDao:SaveRunLog save file error", err)
+			logger.Logger.Printf("dao/EventDao:SaveRunLog save file error %v", err)
 			return err
 		}
 	}
 	return nil
+}
+
+func (s *EventDao) SaveRunLogToDataBase(username string, ctx types.RuleContext, snapshot types.RuleChainRunSnapshot) error {
+	nodelogs, _ := json.Marshal(snapshot.Logs)
+	additionalInfo, _ := json.Marshal(snapshot.AdditionalInfo)
+	ruleChainInfo, _ := json.Marshal(snapshot.RuleChain)
+	metadata, _ := json.Marshal(snapshot.Metadata)
+	t := time.Now()
+	runLog := model.RunLog{
+		RunId:          snapshot.Id,
+		ChainId:        snapshot.RuleChain.RuleChain.ID,
+		ChainName:      snapshot.RuleChain.RuleChain.Name,
+		NodeLog:        string(nodelogs),
+		AdditionalInfo: string(additionalInfo),
+		RuleChainInfo:  string(ruleChainInfo),
+		Metadata:       string(metadata),
+		StartTs:        snapshot.StartTs,
+		EndTs:          snapshot.EndTs,
+		CreatedAt:      &t,
+		UpdatedAt:      &t,
+	}
+	return model.DBClient.Client.Create(&runLog).Error
 }
 
 func (s *EventDao) Delete(username string, chainId, id string) error {
@@ -61,11 +85,19 @@ func (s *EventDao) Delete(username string, chainId, id string) error {
 	return os.RemoveAll(pathStr)
 }
 
+func (s *EventDao) DeleteDataBaseByRunId(username string, chainId, id string) error {
+	return model.DBClient.Client.Where("run_id = ?", id).Delete(&model.RunLog{}).Error
+}
+
 func (s *EventDao) DeleteByChainId(username string, chainId string) error {
 	var paths = []string{s.config.DataDir, constants.DirWorkflows}
 	paths = append(paths, username, constants.DirWorkflowsRun, chainId)
 	pathStr := path.Join(paths...)
 	return os.RemoveAll(pathStr)
+}
+
+func (s *EventDao) DeleteDataBaseByChainId(username string, chainId string) error {
+	return model.DBClient.Client.Where("chain_id = ?", chainId).Delete(&model.RunLog{}).Error
 }
 
 func (s *EventDao) visit(files *[]string) filepath.WalkFunc {
@@ -124,6 +156,35 @@ func (s *EventDao) List(username string, chainId string, current, size int) ([]t
 	return snapshots, len(files), nil
 }
 
+func (s *EventDao) ListByDataBase(username, chainId string, current, size int) ([]types.RuleChainRunSnapshot, int, error) {
+	var snapshots []types.RuleChainRunSnapshot
+	var runLogs []model.RunLog
+	var total int64
+	if chainId == "" {
+		if err := model.DBClient.Client.Order("created_at desc").Offset((current - 1) * size).Limit(size).Find(&runLogs).Error; err != nil {
+			return snapshots, 0, err
+		}
+		if err := model.DBClient.Client.Model(&model.RunLog{}).Count(&total).Error; err != nil {
+			return snapshots, 0, err
+		}
+	} else {
+		if err := model.DBClient.Client.Where("chain_id = ?", chainId).Order("created_at desc").Offset((current - 1) * size).Limit(size).Find(&runLogs).Error; err != nil {
+			return snapshots, 0, err
+		}
+		if err := model.DBClient.Client.Model(&model.RunLog{}).Where("chain_id = ?", chainId).Count(&total).Error; err != nil {
+			return snapshots, 0, err
+		}
+	}
+	for _, runLog := range runLogs {
+		snapshot, err := s.RunLogToRuleChainRunSnapshot(runLog)
+		if err != nil {
+			return snapshots, 0, err
+		}
+		snapshots = append(snapshots, snapshot)
+	}
+	return snapshots, int(total), nil
+}
+
 func (s *EventDao) Get(username, chainId, snapshotId string) (types.RuleChainRunSnapshot, error) {
 	var snapshot types.RuleChainRunSnapshot
 	var paths = []string{s.config.DataDir, constants.DirWorkflows}
@@ -138,4 +199,38 @@ func (s *EventDao) Get(username, chainId, snapshotId string) (types.RuleChainRun
 	} else {
 		return snapshot, nil
 	}
+}
+
+func (s *EventDao) GetByDataBase(username, chainId, snapshotId string) (types.RuleChainRunSnapshot, error) {
+	var snapshot types.RuleChainRunSnapshot
+	var runLog model.RunLog
+	if err := model.DBClient.Client.Where("run_id = ?", snapshotId).First(&runLog).Error; err != nil {
+		return snapshot, err
+	}
+	snapshot, err := s.RunLogToRuleChainRunSnapshot(runLog)
+	if err != nil {
+		return snapshot, err
+	}
+	return snapshot, nil
+}
+
+func (s *EventDao) RunLogToRuleChainRunSnapshot(runLog model.RunLog) (types.RuleChainRunSnapshot, error) {
+	var snapshot types.RuleChainRunSnapshot
+	if err := json.Unmarshal([]byte(runLog.NodeLog), &snapshot.Logs); err != nil {
+		return snapshot, err
+	}
+	if err := json.Unmarshal([]byte(runLog.AdditionalInfo), &snapshot.AdditionalInfo); err != nil {
+		return snapshot, err
+	}
+	if err := json.Unmarshal([]byte(runLog.RuleChainInfo), &snapshot.RuleChain); err != nil {
+		return snapshot, err
+	}
+	if err := json.Unmarshal([]byte(runLog.Metadata), &snapshot.Metadata); err != nil {
+		return snapshot, err
+	}
+	snapshot.StartTs = runLog.StartTs
+	snapshot.EndTs = runLog.EndTs
+	snapshot.StartTs = runLog.StartTs
+	snapshot.EndTs = runLog.EndTs
+	return snapshot, nil
 }

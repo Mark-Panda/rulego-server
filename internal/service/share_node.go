@@ -3,6 +3,10 @@ package service
 
 import (
 	"fmt"
+	"os"
+	"path"
+	"strings"
+
 	"github.com/rulego/rulego-server/config"
 	"github.com/rulego/rulego-server/config/logger"
 	"github.com/rulego/rulego-server/internal/constants"
@@ -10,9 +14,6 @@ import (
 	"github.com/rulego/rulego/api/types"
 	"github.com/rulego/rulego/utils/fs"
 	"github.com/rulego/rulego/utils/json"
-	"os"
-	"path"
-	"strings"
 )
 
 // ShareNodeService represents the service for managing share nodes.
@@ -113,7 +114,7 @@ func (s *ShareNodeService) Load(ruleConfig *types.Config) error {
 				if err = json.Unmarshal(content, &shareNode); err != nil {
 					return err
 				}
-				if _, err = ruleConfig.NetPool.NewFromRuleNode(shareNode); err != nil {
+				if _, err = ruleConfig.NodePool.NewFromRuleNode(shareNode); err != nil {
 					return err
 				}
 			case constants.TypeShareEndpoint:
@@ -122,7 +123,7 @@ func (s *ShareNodeService) Load(ruleConfig *types.Config) error {
 					return err
 				}
 
-				if _, err = ruleConfig.NetPool.NewFromEndpoint(endpoint); err != nil {
+				if _, err = ruleConfig.NodePool.NewFromEndpoint(endpoint); err != nil {
 					return err
 				}
 			default:

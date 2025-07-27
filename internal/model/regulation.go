@@ -7,7 +7,6 @@ import (
 )
 
 type Regulation struct {
-	gorm.Model
 	Id          int64           `gorm:"column:id"`
 	UserName    string          `gorm:"column:user_name"`
 	Root        bool            `gorm:"column:root"`

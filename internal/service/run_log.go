@@ -26,20 +26,25 @@ func NewEventService(config config.Config) (*EventService, error) {
 
 // SaveRunLog 保存工作流运行日志快照
 func (s *EventService) SaveRunLog(username string, ctx types.RuleContext, snapshot types.RuleChainRunSnapshot) error {
-	return s.EventDao.SaveRunLog(username, ctx, snapshot)
+	//return s.EventDao.SaveRunLog(username, ctx, snapshot)
+	return s.EventDao.SaveRunLogToDataBase(username, ctx, snapshot)
 }
 
 func (s *EventService) Delete(username, chainId, id string) error {
-	return s.EventDao.Delete(username, chainId, id)
+	// return s.EventDao.Delete(username, chainId, id)
+	return s.EventDao.DeleteDataBaseByRunId(username, chainId, id)
 }
 func (s *EventService) DeleteByChainId(username, chainId string) error {
-	return s.EventDao.DeleteByChainId(username, chainId)
+	// return s.EventDao.DeleteByChainId(username, chainId)
+	return s.EventDao.DeleteDataBaseByChainId(username, chainId)
 }
 
 func (s *EventService) List(username, chainId string, current, size int) ([]types.RuleChainRunSnapshot, int, error) {
-	return s.EventDao.List(username, chainId, current, size)
+	//return s.EventDao.List(username, chainId, current, size)
+	return s.EventDao.ListByDataBase(username, chainId, current, size)
 }
 
 func (s *EventService) Get(username, chainId, snapshotId string) (types.RuleChainRunSnapshot, error) {
-	return s.EventDao.Get(username, chainId, snapshotId)
+	//return s.EventDao.Get(username, chainId, snapshotId)
+	return s.EventDao.GetByDataBase(username, chainId, snapshotId)
 }
