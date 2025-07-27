@@ -153,6 +153,7 @@ onMounted(() => {
             :name="item.ruleChain.name"
             :description="item.ruleChain.additionalInfo.description"
             :disabled="item.ruleChain.disabled"
+            :root="item.ruleChain.root"
             @click.prevent="
               item.ruleChain.disabled ? null : openDetail(item.ruleChain.id)
             "

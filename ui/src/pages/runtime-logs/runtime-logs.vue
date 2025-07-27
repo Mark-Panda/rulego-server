@@ -80,6 +80,7 @@ async function refreshTableData() {
             ts: item.startTs,
             chainId: item.ruleChain?.id || '',
             chainName: item.ruleChain?.name || '',
+            isRoot: item.ruleChain?.root || false,
             executionTime: executionTime,
             nodeCount: nodeCount,
             hasError: hasError,
@@ -512,21 +513,39 @@ onMounted(() => {
         />
         <el-table-column label="工作流" min-width="180" align="left">
           <template #default="scope">
-            <el-tooltip
-              v-if="scope.row.chainId"
-              effect="dark"
-              :content="scope.row.chainName || scope.row.chainId"
-              placement="top"
-            >
-              <span>
-                {{
-                  scope.row.chainName || 
-                  (scope.row.chainId && scope.row.chainId.length > 12
-                    ? scope.row.chainId.substring(0, 12) + '...'
-                    : scope.row.chainId)
-                }}
-              </span>
-            </el-tooltip>
+            <div class="flex items-center">
+              <el-tooltip
+                v-if="scope.row.chainId"
+                effect="dark"
+                :content="scope.row.chainName || scope.row.chainId"
+                placement="top"
+              >
+                <span>
+                  {{
+                    scope.row.chainName || 
+                    (scope.row.chainId && scope.row.chainId.length > 12
+                      ? scope.row.chainId.substring(0, 12) + '...'
+                      : scope.row.chainId)
+                  }}
+                </span>
+              </el-tooltip>
+              <el-tag
+                v-if="scope.row.isRoot"
+                size="small"
+                type="success"
+                class="ml-2"
+              >
+                根规则链
+              </el-tag>
+              <el-tag
+                v-else
+                size="small"
+                type="info"
+                class="ml-2"
+              >
+                子规则链
+              </el-tag>
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="nodeCount" label="节点数" min-width="100" align="left" />

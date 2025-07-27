@@ -11,6 +11,10 @@ const props = defineProps({
   disabled: {
     type: Boolean,
   },
+  root: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits([
@@ -110,9 +114,12 @@ function exportHandler() {
         </div>
         <div class="mt-2 flex-none pt-2 border-t border-gray-100 dark:border-gray-700">
           <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-            <div>
+            <div class="flex space-x-1">
               <el-tag size="small" :type="props.disabled ? 'info' : 'success'" effect="light" class="text-xs">
                 {{ props.disabled ? '未部署' : '已部署' }}
+              </el-tag>
+              <el-tag size="small" :type="props.root ? 'success' : 'info'" effect="plain" class="text-xs">
+                {{ props.root ? '根规则链' : '子规则链' }}
               </el-tag>
             </div>
             <div class="flex space-x-2">
