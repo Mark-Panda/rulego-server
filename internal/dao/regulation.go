@@ -72,9 +72,9 @@ func FindRegulationByPage(page, size int, root *bool, disabled *bool, keywords s
 	}
 	if keywords != "" {
 		if where != "" {
-			where = fmt.Sprintf("%s and name like '%s'  ", where, keywords)
+			where = fmt.Sprintf("%s and name like '%s'  ", where, "%"+keywords+"%")
 		} else {
-			where = fmt.Sprintf("name like '%s'  ", keywords)
+			where = fmt.Sprintf("name like '%s'  ", "%"+keywords+"%")
 		}
 	}
 	err := model.DBClient.Client.Model(&model.Regulation{}).Where(where).Order("updated_at desc").Offset((page - 1) * size).Limit(size).Find(&re).Error
