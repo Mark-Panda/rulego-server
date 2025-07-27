@@ -70,7 +70,7 @@ async function refreshTableData() {
     }
     
     // 处理API返回的数据结构
-    if (res && res.items && Array.isArray(res.items)) {
+    if (res && res.items && Array.isArray(res.items) && res.items.length > 0) {
       // 处理数据，提取需要的字段
       const processedData = res.items.map(item => {
         const ruleChain = item.ruleChain || {};
@@ -99,10 +99,14 @@ async function refreshTableData() {
       tableData.value = processedData;
       paginationState.value.total = res.total || processedData.length;
     } else {
-      // 其他情况，确保是空数组
+      // 处理items为null或空数组的情况
       tableData.value = [];
-      paginationState.value.total = 0;
-      console.warn('无法解析的数据结构:', res);
+      paginationState.value.total = res.total || 0;
+      if (!res || res.items === null) {
+        console.log('组件市场暂无数据');
+      } else {
+        console.warn('无法解析的数据结构:', res);
+      }
     }
     
     console.log('处理后的表格数据:', tableData.value);
