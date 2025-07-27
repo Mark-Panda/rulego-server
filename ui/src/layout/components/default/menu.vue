@@ -69,10 +69,22 @@ const menuItems = [
         implemented: true
       },
       { 
-        index: 'node-manage', 
+        index: 'components-installed', 
         icon: 'el-icon-suitcase', 
         label: '组件管理',
-        implemented: false
+        implemented: true,
+        children: [
+          {
+            index: 'components-installed',
+            label: '已安装组件',
+            implemented: true
+          },
+          {
+            index: 'components-market',
+            label: '组件市场',
+            implemented: true
+          }
+        ]
       },
       { 
         index: 'system-manage', 
@@ -130,26 +142,65 @@ const logoStyle = computed(() => {
               <span>{{ section.title }}</span>
             </template>
             
-            <el-menu-item 
-              v-for="item in section.items" 
-              :key="item.index" 
-              :index="item.index"
-              @click="handleItemClick(item)"
-            >
-              <el-icon><component :is="item.icon" /></el-icon>
-              <template #title>
-                <span>{{ item.label }}</span>
-                <el-tag 
-                  v-if="!item.implemented" 
-                  size="small" 
-                  type="info" 
-                  effect="plain"
-                  class="ml-2"
+            <template v-for="item in section.items" :key="item.index">
+              <!-- 有子菜单的项目 -->
+              <el-sub-menu v-if="item.children && item.children.length > 0" :index="item.index">
+                <template #title>
+                  <el-icon><component :is="item.icon" /></el-icon>
+                  <span>{{ item.label }}</span>
+                  <el-tag 
+                    v-if="!item.implemented" 
+                    size="small" 
+                    type="info" 
+                    effect="plain"
+                    class="ml-2"
+                  >
+                    开发中
+                  </el-tag>
+                </template>
+                
+                <el-menu-item 
+                  v-for="child in item.children" 
+                  :key="child.index" 
+                  :index="child.index"
+                  @click="handleItemClick(child)"
                 >
-                  开发中
-                </el-tag>
-              </template>
-            </el-menu-item>
+                  <template #title>
+                    <span>{{ child.label }}</span>
+                    <el-tag 
+                      v-if="!child.implemented" 
+                      size="small" 
+                      type="info" 
+                      effect="plain"
+                      class="ml-2"
+                    >
+                      开发中
+                    </el-tag>
+                  </template>
+                </el-menu-item>
+              </el-sub-menu>
+              
+              <!-- 没有子菜单的项目 -->
+              <el-menu-item 
+                v-else
+                :index="item.index"
+                @click="handleItemClick(item)"
+              >
+                <el-icon><component :is="item.icon" /></el-icon>
+                <template #title>
+                  <span>{{ item.label }}</span>
+                  <el-tag 
+                    v-if="!item.implemented" 
+                    size="small" 
+                    type="info" 
+                    effect="plain"
+                    class="ml-2"
+                  >
+                    开发中
+                  </el-tag>
+                </template>
+              </el-menu-item>
+            </template>
           </el-sub-menu>
         </template>
       </el-menu>
@@ -158,7 +209,7 @@ const logoStyle = computed(() => {
     <!-- Bottom Actions -->
     <div class="flex-none border-t border-[var(--el-border-color)] p-2">
       <el-tooltip :content="collapsed ? '切换主题' : ''" placement="right">
-        <el-button type="text" class="w-full justify-center" @click="switchTheme">
+        <el-button :link="true" class="w-full justify-center" @click="switchTheme">
           <el-icon>
             <el-icon-moon v-if="themeMode === 'light'" />
             <el-icon-sunny v-else />

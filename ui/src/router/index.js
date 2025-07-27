@@ -23,6 +23,18 @@ const routes = [
         component: () =>
           import('@src/pages/share-node-list/share-node-list.vue'),
       },
+      {
+        path: '/components-installed',
+        name: 'components-installed',
+        component: () =>
+          import('@src/pages/components-management/components-installed.vue'),
+      },
+      {
+        path: '/components-market',
+        name: 'components-market',
+        component: () =>
+          import('@src/pages/components-management/components-market.vue'),
+      },
     ],
   },
   {
