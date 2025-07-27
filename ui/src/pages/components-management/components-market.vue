@@ -13,8 +13,6 @@ const paginationState = ref({
 });
 const searchForm = ref({
   name: '',
-  type: '',
-  category: '',
 });
 
 // 组件类型选项
@@ -41,45 +39,34 @@ async function refreshTableData() {
     const params = {
       page: paginationState.value.page,
       size: paginationState.value.size,
-      name: searchForm.value.name,
-      type: searchForm.value.type,
-      category: searchForm.value.category,
+      keywords: searchForm.value.name,
+      checkMy: 'true'
     };
     
     // 调用API获取组件市场列表
     const res = await Api.getMarketComponents(params);
     console.log('组件市场API返回数据:', res);
     
-    // 检查数据结构并确保表格数据始终是数组
-    if (res && res.data) {
-      // 如果数据在data字段中
-      if (Array.isArray(res.data.items)) {
-        tableData.value = res.data.items;
-        paginationState.value.total = res.data.total || res.data.items.length;
-      } else if (Array.isArray(res.data)) {
-        tableData.value = res.data;
-        paginationState.value.total = res.data.length;
-      } else {
-        // 如果不是数组，则转换为数组
-        tableData.value = [];
-        if (res.data.nodes) {
-          // 特殊处理，如果有nodes字段，使用它
-          tableData.value = Array.isArray(res.data.nodes) ? res.data.nodes : [];
-          paginationState.value.total = tableData.value.length;
-        }
-      }
-    } else if (res && res.items && Array.isArray(res.items)) {
-      // 如果数据直接在items字段中
-      tableData.value = res.items;
-      paginationState.value.total = res.total || res.items.length;
-    } else if (Array.isArray(res)) {
-      // 如果直接返回数组
-      tableData.value = res;
-      paginationState.value.total = res.length;
-    } else if (res && res.nodes && Array.isArray(res.nodes)) {
-      // 特殊处理，如果有nodes字段
-      tableData.value = res.nodes;
-      paginationState.value.total = res.nodes.length;
+    // 处理API返回的数据结构
+    if (res && res.items && Array.isArray(res.items)) {
+      // 处理数据，提取需要的字段
+      const processedData = res.items.map(item => {
+        const ruleChain = item.ruleChain || {};
+        const additionalInfo = ruleChain.additionalInfo || {};
+        
+        return {
+          id: ruleChain.id,
+          name: ruleChain.name || '未命名组件',
+          root: ruleChain.root ? '是' : '否',
+          description: additionalInfo.description || '-',
+          author: additionalInfo.username || '-',
+          updateTime: additionalInfo.updateTime || '-',
+          _original: item // 保存原始数据
+        };
+      });
+      
+      tableData.value = processedData;
+      paginationState.value.total = res.total || processedData.length;
     } else {
       // 其他情况，确保是空数组
       tableData.value = [];
@@ -115,8 +102,6 @@ function handleSearch() {
 
 function handleReset() {
   searchForm.value.name = '';
-  searchForm.value.type = '';
-  searchForm.value.category = '';
   paginationState.value.page = 1;
   refreshTableData();
 }
@@ -141,10 +126,17 @@ function handleInstall(row) {
 }
 
 function handleViewDetail(row) {
-  // 查看组件详情
-  ElMessageBox.alert(row.description, row.name, {
+  // 查看组件详情 - 显示原始数据
+  const originalData = row._original || row;
+  
+  // 使用简单的方式显示JSON
+  const jsonContent = JSON.stringify(originalData, null, 2);
+  const content = `<pre style="white-space: pre-wrap; word-break: break-all;">${jsonContent}</pre>`;
+  
+  ElMessageBox.alert(content, '组件详情', {
     dangerouslyUseHTMLString: true,
     confirmButtonText: '确定',
+    customClass: 'component-detail-dialog'
   });
 }
 
@@ -203,34 +195,6 @@ onMounted(() => {
             </template>
           </el-input>
           
-          <el-select 
-            v-model="searchForm.type" 
-            placeholder="组件类型" 
-            style="width: 140px;"
-            clearable
-          >
-            <el-option
-              v-for="item in componentTypeOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
-          
-          <el-select 
-            v-model="searchForm.category" 
-            placeholder="组件分类" 
-            style="width: 140px;"
-            clearable
-          >
-            <el-option
-              v-for="item in componentCategoryOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
-          
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="handleReset">重置</el-button>
         </div>
@@ -253,23 +217,10 @@ onMounted(() => {
         stripe
       >
         <el-table-column prop="name" label="组件名称" min-width="150" />
-        <el-table-column label="组件类型" min-width="120">
-          <template #default="scope">
-            <el-tag v-if="scope.row.type" :type="getComponentTypeTagType(scope.row.type)">
-              {{ getComponentTypeText(scope.row.type) }}
-            </el-tag>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="分类" min-width="120">
-          <template #default="scope">
-            <span>{{ getComponentCategoryText(scope.row.category) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="version" label="版本" width="100" />
+        <el-table-column prop="root" label="根组件" width="100" />
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
         <el-table-column prop="author" label="作者" min-width="120" />
-        <el-table-column prop="downloads" label="下载次数" width="100" />
+        <el-table-column prop="updateTime" label="更新时间" min-width="180" />
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="scope">
             <el-button

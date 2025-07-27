@@ -27,18 +27,14 @@ const componentTypeOptions = [
   { label: '输入端', value: 'endpoint' }
 ];
 
+// 存储所有组件数据
+const allComponentsData = ref([]);
+
 async function refreshTableData() {
   loading.value = true;
   try {
-    const params = {
-      page: paginationState.value.page,
-      size: paginationState.value.size,
-      name: searchForm.value.name,
-      type: searchForm.value.type,
-    };
-    
-    // 调用API获取已安装组件列表
-    const res = await Api.getInstalledComponents(params);
+    // 调用API获取已安装组件列表，不传分页参数
+    const res = await Api.getInstalledComponents();
     console.log('已安装组件API返回数据:', res);
     
     // 处理API返回的数据结构
@@ -83,26 +79,15 @@ async function refreshTableData() {
       });
     }
     
-    // 根据搜索条件过滤数据
-    let filteredData = processedData;
-    if (searchForm.value.type) {
-      filteredData = filteredData.filter(item => item.category === searchForm.value.type);
-    }
-    if (searchForm.value.name) {
-      const keyword = searchForm.value.name.toLowerCase();
-      filteredData = filteredData.filter(item => 
-        (item.name && item.name.toLowerCase().includes(keyword)) || 
-        (item.description && item.description.toLowerCase().includes(keyword))
-      );
-    }
+    // 保存所有组件数据
+    allComponentsData.value = processedData;
     
-    tableData.value = filteredData;
-    paginationState.value.total = filteredData.length;
+    // 应用过滤和分页
+    applyFilterAndPagination();
     
-    console.log('处理后的表格数据:', tableData.value);
   } catch (error) {
-    console.error('获取已安装组件列表失败:', error);
     ElMessage.error('获取已安装组件列表失败');
+    allComponentsData.value = [];
     tableData.value = [];
     paginationState.value.total = 0;
   } finally {
@@ -110,26 +95,50 @@ async function refreshTableData() {
   }
 }
 
+// 应用过滤和分页
+function applyFilterAndPagination() {
+  // 根据搜索条件过滤数据
+  let filteredData = allComponentsData.value;
+  if (searchForm.value.type) {
+    filteredData = filteredData.filter(item => item.category === searchForm.value.type);
+  }
+  if (searchForm.value.name) {
+    const keyword = searchForm.value.name.toLowerCase();
+    filteredData = filteredData.filter(item => 
+      (item.name && item.name.toLowerCase().includes(keyword)) || 
+      (item.description && item.description.toLowerCase().includes(keyword))
+    );
+  }
+  
+  // 更新总数
+  paginationState.value.total = filteredData.length;
+  
+  // 应用分页
+  const start = (paginationState.value.page - 1) * paginationState.value.size;
+  const end = start + paginationState.value.size;
+  tableData.value = filteredData.slice(start, end);
+}
+
 function handleSizeChange(val) {
   paginationState.value.size = val;
-  refreshTableData();
+  applyFilterAndPagination();
 }
 
 function handleCurrentChange(val) {
   paginationState.value.page = val;
-  refreshTableData();
+  applyFilterAndPagination();
 }
 
 function handleSearch() {
   paginationState.value.page = 1;
-  refreshTableData();
+  applyFilterAndPagination();
 }
 
 function handleReset() {
   searchForm.value.name = '';
   searchForm.value.type = '';
   paginationState.value.page = 1;
-  refreshTableData();
+  applyFilterAndPagination();
 }
 
 function handleUninstall(row) {
@@ -181,6 +190,8 @@ function getComponentTypeTagType(type) {
 function handleViewDetail(row) {
   // 直接展示原始组件的JSON信息
   const originalData = row._original || row;
+  
+  // 使用简单的方式显示JSON
   const jsonContent = JSON.stringify(originalData, null, 2);
   const content = `<pre style="white-space: pre-wrap; word-break: break-all;">${jsonContent}</pre>`;
   
