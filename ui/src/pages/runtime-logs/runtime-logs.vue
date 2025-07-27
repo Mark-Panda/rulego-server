@@ -373,6 +373,8 @@ onMounted(() => {
         :border="true"
         stripe
         row-key="id"
+        @row-click="toggleRowExpansion"
+        class="cursor-pointer"
       >
         <!-- 展开按钮列 -->
         <el-table-column type="expand" width="50">
@@ -582,16 +584,6 @@ onMounted(() => {
         <el-table-column label="执行时间(ms)" min-width="120" align="left">
           <template #default="scope">
             <span>{{ scope.row.executionTime || '-' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="120" align="center">
-          <template #default="scope">
-            <el-button
-              size="small"
-              @click="toggleRowExpansion(scope.row)"
-            >
-              查看详情
-            </el-button>
           </template>
         </el-table-column>
       </el-table>
