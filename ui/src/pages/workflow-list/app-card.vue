@@ -57,11 +57,13 @@ function exportHandler() {
     >
       <div class="flex h-full flex-col">
         <div class="flex flex-none items-center">
-          <div class="relative h-10 w-10 flex-none rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800">
+          <div class="relative h-10 w-10 flex-none rounded-lg bg-gradient-to-br" 
+               :class="props.root ? 'from-green-100 to-green-200 dark:from-green-900 dark:to-green-800' : 'from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800'">
             <div
               class="absolute bottom-[-4px] right-[-4px] flex h-6 w-6 items-center justify-center rounded-full border border-[var(--el-border-color)] bg-white shadow-sm dark:bg-gray-800"
             >
-              <el-icon class="text-primary"><el-icon-cpu /></el-icon>
+              <el-icon class="text-primary" v-if="props.root"><el-icon-connection /></el-icon>
+              <el-icon class="text-primary" v-else><el-icon-cpu /></el-icon>
             </div>
           </div>
           <div class="flex-grow overflow-hidden pl-4">
