@@ -47,20 +47,51 @@ async function refreshTableData() {
     const res = await Api.getMarketComponents(params);
     console.log('组件市场API返回数据:', res);
     
+    // 获取已安装组件列表，用于比较
+    const installedRes = await Api.getInstalledComponents();
+    const installedComponents = {};
+    
+    // 处理已安装组件数据
+    if (installedRes && installedRes.nodes && Array.isArray(installedRes.nodes)) {
+      installedRes.nodes.forEach(item => {
+        // 从组件市场下载的组件，category为custom，type是组件id
+        if (item.category === 'custom' && item.type) {
+          installedComponents[item.type] = {
+            installed: true,
+            updateTime: item.additionalInfo?.updateTime || ''
+          };
+        } else if (item.id) {
+          installedComponents[item.id] = {
+            installed: true,
+            updateTime: item.additionalInfo?.updateTime || ''
+          };
+        }
+      });
+    }
+    
     // 处理API返回的数据结构
     if (res && res.items && Array.isArray(res.items)) {
       // 处理数据，提取需要的字段
       const processedData = res.items.map(item => {
         const ruleChain = item.ruleChain || {};
         const additionalInfo = ruleChain.additionalInfo || {};
+        const id = ruleChain.id;
+        
+        // 检查组件是否已安装
+        const isInstalled = installedComponents[id]?.installed || false;
+        // 检查是否需要升级（更新时间不一致）
+        const needUpgrade = isInstalled && 
+          installedComponents[id]?.updateTime !== additionalInfo.updateTime;
         
         return {
-          id: ruleChain.id,
+          id: id,
           name: ruleChain.name || '未命名组件',
           root: ruleChain.root ? '是' : '否',
           description: additionalInfo.description || '-',
           author: additionalInfo.username || '-',
           updateTime: additionalInfo.updateTime || '-',
+          installed: isInstalled,
+          needUpgrade: needUpgrade,
           _original: item // 保存原始数据
         };
       });
@@ -113,7 +144,10 @@ function handleInstall(row) {
     type: 'info',
   }).then(async () => {
     try {
-      await Api.installComponent(row.id);
+      // 获取原始组件数据
+      const originalData = row._original || row;
+      // 调用安装组件API
+      await Api.installComponent(row.id, originalData);
       ElMessage.success('安装组件成功');
       refreshTableData();
     } catch (error) {
@@ -122,6 +156,47 @@ function handleInstall(row) {
     }
   }).catch(() => {
     // 用户取消安装
+  });
+}
+
+function handleUpgrade(row) {
+  ElMessageBox.confirm(`确定要升级组件 "${row.name}" 吗？升级后将使用最新版本。`, '升级确认', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
+  }).then(async () => {
+    try {
+      // 获取原始组件数据
+      const originalData = row._original || row;
+      // 调用安装组件API（升级使用相同的API）
+      await Api.installComponent(row.id, originalData);
+      ElMessage.success('升级组件成功');
+      refreshTableData();
+    } catch (error) {
+      console.error('升级组件失败:', error);
+      ElMessage.error('升级组件失败');
+    }
+  }).catch(() => {
+    // 用户取消升级
+  });
+}
+
+function handleUninstall(row) {
+  ElMessageBox.confirm(`确定要卸载组件 "${row.name}" 吗？卸载后将无法在工作流中使用该组件。`, '卸载确认', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'danger',
+  }).then(async () => {
+    try {
+      await Api.uninstallComponent(row.id);
+      ElMessage.success('卸载组件成功');
+      refreshTableData();
+    } catch (error) {
+      console.error('卸载组件失败:', error);
+      ElMessage.error('卸载组件失败');
+    }
+  }).catch(() => {
+    // 用户取消卸载
   });
 }
 
@@ -221,7 +296,7 @@ onMounted(() => {
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
         <el-table-column prop="author" label="作者" min-width="120" />
         <el-table-column prop="updateTime" label="更新时间" min-width="180" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="scope">
             <el-button
               size="small"
@@ -231,12 +306,28 @@ onMounted(() => {
               详情
             </el-button>
             <el-button
+              v-if="!scope.row.installed"
               size="small"
               type="success"
               @click="handleInstall(scope.row)"
-              :disabled="scope.row.installed"
             >
-              {{ scope.row.installed ? '已安装' : '安装' }}
+              安装
+            </el-button>
+            <el-button
+              v-if="scope.row.installed && scope.row.needUpgrade"
+              size="small"
+              type="warning"
+              @click="handleUpgrade(scope.row)"
+            >
+              升级
+            </el-button>
+            <el-button
+              v-if="scope.row.installed"
+              size="small"
+              type="danger"
+              @click="handleUninstall(scope.row)"
+            >
+              卸载
             </el-button>
           </template>
         </el-table-column>

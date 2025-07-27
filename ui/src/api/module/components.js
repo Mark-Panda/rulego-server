@@ -26,6 +26,15 @@ export function getMarketComponents(params) {
   return request.get('marketplace/components', { params });
 }
 
+/**
+ * 安装组件
+ * @param {String} id 组件ID
+ * @param {Object} data 组件数据
+ * @returns {Promise} 返回安装结果
+ */
+export function installComponent(id, data) {
+  return request.post(`/dynamic-components/${id}`, data);
+}
 
 /**
  * 卸载组件
@@ -33,7 +42,7 @@ export function getMarketComponents(params) {
  * @returns {Promise} 返回卸载结果
  */
 export function uninstallComponent(id) {
-  return request.post(`/components/${id}/uninstall`);
+  return request.delete(`/dynamic-components/${id}`);
 }
 
 /**
