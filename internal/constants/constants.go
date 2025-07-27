@@ -58,6 +58,8 @@ const (
 	KeyHeadersToMetadata         = "headersToMetadata"
 	KeyInMessage                 = "inMessage"
 	KeyBody                      = "body"
+	KeyStartTime                 = "startTime"
+	KeyEndTime                   = "endTime"
 )
 
 const (

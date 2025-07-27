@@ -23,15 +23,26 @@ const paginationState = ref({
 });
 const formState = ref({
   keywords: '',
+  chainType: 'all', // 'all', 'root', 'child'
 });
 const data = ref([]);
 
 async function refreshData() {
-  const res = await Api.getRules({
+  const params = {
     page: paginationState.value.page,
     size: paginationState.value.size,
     keywords: formState.value.keywords,
-  });
+  };
+  
+  // 根据选择的规则链类型添加root参数
+  if (formState.value.chainType === 'root') {
+    params.root = 'true';
+  } else if (formState.value.chainType === 'child') {
+    params.root = 'false';
+  }
+  // 如果是'all'，则不传root参数
+  
+  const res = await Api.getRules(params);
   data.value = res.items;
   paginationState.value.total = res.total;
 
@@ -110,26 +121,40 @@ onMounted(() => {
         <h1 class="text-xl font-medium text-gray-800 dark:text-gray-200">我的应用</h1>
         <el-tag type="info" effect="plain" class="ml-2">{{ paginationState.total }} 个应用</el-tag>
       </div>
-      <div class="flex items-center space-x-2">
-        <el-input
-          placeholder="搜索应用名称"
-          :clearable="true"
-          class="w-[220px]"
-          v-model="formState.keywords"
-          @keyup.enter="refreshData"
-        >
-          <template #prefix>
-            <el-icon><el-icon-search /></el-icon>
-          </template>
-        </el-input>
-        <el-button type="primary" @click="openCreateAppModalHandler">
-          <el-icon class="mr-1"><el-icon-plus /></el-icon>
-          <span>创建应用</span>
-        </el-button>
-        <el-button @click="importHandler">
-          <el-icon class="mr-1"><el-icon-upload /></el-icon>
-          <span>导入应用</span>
-        </el-button>
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-3">
+          <el-input
+            placeholder="搜索应用名称"
+            :clearable="true"
+            style="width: 220px;"
+            v-model="formState.keywords"
+            @keyup.enter="refreshData"
+          >
+            <template #prefix>
+              <el-icon><el-icon-search /></el-icon>
+            </template>
+          </el-input>
+          <el-select 
+            v-model="formState.chainType" 
+            placeholder="规则链类型" 
+            @change="refreshData"
+            style="width: 140px;"
+          >
+            <el-option label="全部" value="all" />
+            <el-option label="根规则链" value="root" />
+            <el-option label="子规则链" value="child" />
+          </el-select>
+        </div>
+        <div class="flex items-center space-x-3">
+          <el-button type="primary" @click="openCreateAppModalHandler">
+            <el-icon class="mr-1"><el-icon-plus /></el-icon>
+            <span>创建应用</span>
+          </el-button>
+          <el-button @click="importHandler">
+            <el-icon class="mr-1"><el-icon-upload /></el-icon>
+            <span>导入应用</span>
+          </el-button>
+        </div>
       </div>
     </div>
     

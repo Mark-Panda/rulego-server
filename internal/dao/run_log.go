@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -156,20 +157,54 @@ func (s *EventDao) List(username string, chainId string, current, size int) ([]t
 	return snapshots, len(files), nil
 }
 
-func (s *EventDao) ListByDataBase(username, chainId string, current, size int) ([]types.RuleChainRunSnapshot, int, error) {
+func (s *EventDao) ListByDataBase(username, chainId string, current, size int, startTime, endTime string) ([]types.RuleChainRunSnapshot, int, error) {
 	var snapshots []types.RuleChainRunSnapshot
 	var runLogs []model.RunLog
 	var total int64
-	if chainId == "" {
-		if err := model.DBClient.Client.Order("created_at desc").Offset((current - 1) * size).Limit(size).Find(&runLogs).Error; err != nil {
-			return snapshots, 0, err
+	where := ""
+	if startTime != "" {
+		where = fmt.Sprintf("created_at >= '%s'", startTime)
+	}
+	if endTime != "" {
+		if where != "" {
+			where = fmt.Sprintf("%s and created_at <= '%s'", where, endTime)
+		} else {
+			where = fmt.Sprintf("created_at <= '%s'", endTime)
 		}
-		if err := model.DBClient.Client.Model(&model.RunLog{}).Count(&total).Error; err != nil {
-			return snapshots, 0, err
+	}
+	if chainId == "" {
+		if where != "" {
+			if err := model.DBClient.Client.Where(where).Order("created_at desc").Offset((current - 1) * size).Limit(size).Find(&runLogs).Error; err != nil {
+				return snapshots, 0, err
+			}
+			if err := model.DBClient.Client.Model(&model.RunLog{}).Where(where).Count(&total).Error; err != nil {
+				return snapshots, 0, err
+			}
+		} else {
+			if err := model.DBClient.Client.Order("created_at desc").Offset((current - 1) * size).Limit(size).Find(&runLogs).Error; err != nil {
+				return snapshots, 0, err
+			}
+			if err := model.DBClient.Client.Model(&model.RunLog{}).Count(&total).Error; err != nil {
+				return snapshots, 0, err
+			}
 		}
 	} else {
-		if err := model.DBClient.Client.Where("chain_id = ?", chainId).Order("created_at desc").Offset((current - 1) * size).Limit(size).Find(&runLogs).Error; err != nil {
-			return snapshots, 0, err
+		if where != "" {
+			where = fmt.Sprintf("%s and chain_id = '%s'", where, chainId)
+			if err := model.DBClient.Client.Where(where).Order("created_at desc").Offset((current - 1) * size).Limit(size).Find(&runLogs).Error; err != nil {
+				return snapshots, 0, err
+			}
+			if err := model.DBClient.Client.Model(&model.RunLog{}).Where(where).Count(&total).Error; err != nil {
+				return snapshots, 0, err
+			}
+		} else {
+			where = fmt.Sprintf("chain_id = '%s'", chainId)
+			if err := model.DBClient.Client.Where(where).Order("created_at desc").Offset((current - 1) * size).Limit(size).Find(&runLogs).Error; err != nil {
+				return snapshots, 0, err
+			}
+			if err := model.DBClient.Client.Model(&model.RunLog{}).Where(where).Count(&total).Error; err != nil {
+				return snapshots, 0, err
+			}
 		}
 		if err := model.DBClient.Client.Model(&model.RunLog{}).Where("chain_id = ?", chainId).Count(&total).Error; err != nil {
 			return snapshots, 0, err

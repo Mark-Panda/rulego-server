@@ -1,14 +1,15 @@
 package controller
 
 import (
+	"net/http"
+	"strconv"
+
 	"github.com/rulego/rulego-server/internal/constants"
 	"github.com/rulego/rulego-server/internal/service"
 	"github.com/rulego/rulego/api/types"
 	endpointApi "github.com/rulego/rulego/api/types/endpoint"
 	"github.com/rulego/rulego/endpoint"
 	"github.com/rulego/rulego/utils/json"
-	"net/http"
-	"strconv"
 )
 
 var Log = &log{}
@@ -54,6 +55,8 @@ func (c *log) List(url string) endpointApi.Router {
 		chainId := msg.Metadata.GetValue(constants.KeyChainId)
 		id := msg.Metadata.GetValue(constants.KeyId)
 		username := msg.Metadata.GetValue(constants.KeyUsername)
+		startTime := msg.Metadata.GetValue(constants.KeyStartTime)
+		endTime := msg.Metadata.GetValue(constants.KeyEndTime)
 		var result interface{}
 		if id == "" {
 			var current = 1
@@ -66,7 +69,7 @@ func (c *log) List(url string) endpointApi.Router {
 			if i, err := strconv.Atoi(pageSizeStr); err == nil {
 				pageSize = i
 			}
-			if v, total, err := service.EventServiceImpl.List(username, chainId, current, pageSize); err != nil {
+			if v, total, err := service.EventServiceImpl.List(username, chainId, current, pageSize, startTime, endTime); err != nil {
 				exchange.Out.SetStatusCode(http.StatusNotFound)
 				exchange.Out.SetBody([]byte(err.Error()))
 				return false

@@ -39,9 +39,9 @@ func (s *EventService) DeleteByChainId(username, chainId string) error {
 	return s.EventDao.DeleteDataBaseByChainId(username, chainId)
 }
 
-func (s *EventService) List(username, chainId string, current, size int) ([]types.RuleChainRunSnapshot, int, error) {
+func (s *EventService) List(username, chainId string, current, size int, startTime, endTime string) ([]types.RuleChainRunSnapshot, int, error) {
 	//return s.EventDao.List(username, chainId, current, size)
-	return s.EventDao.ListByDataBase(username, chainId, current, size)
+	return s.EventDao.ListByDataBase(username, chainId, current, size, startTime, endTime)
 }
 
 func (s *EventService) Get(username, chainId, snapshotId string) (types.RuleChainRunSnapshot, error) {
