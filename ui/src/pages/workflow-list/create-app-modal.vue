@@ -10,6 +10,7 @@ const dialogVisible = ref(false);
 const formState = ref({
   name: '',
   description: '',
+  root: true,
 });
 const rules = ref({
   name: [{ required: true, message: '应用名称不能为空', trigger: 'blur' }],
@@ -30,7 +31,7 @@ async function createHandler() {
     const params = {
       id: nanoid(12),
       name: formState.value.name,
-      root: true,
+      root: formState.value.root,
       additionalInfo: {
         description: formState.value.description,
       },
@@ -68,6 +69,15 @@ defineExpose({
           resize="none"
           placeholder="应用描述"
         ></el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-switch
+          v-model="formState.root"
+          active-text="根规则链"
+          inactive-text="子规则链"
+          :active-value="true"
+          :inactive-value="false"
+        />
       </el-form-item>
     </el-form>
     <template #footer>
