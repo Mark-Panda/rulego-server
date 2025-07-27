@@ -263,6 +263,17 @@ function showErrorHandler(err) {
 }
 
 function handleSearch() {
+  // 验证结束时间不能小于开始时间
+  if (searchForm.value.startTime && searchForm.value.endTime) {
+    const startTime = new Date(searchForm.value.startTime).getTime();
+    const endTime = new Date(searchForm.value.endTime).getTime();
+    
+    if (endTime < startTime) {
+      ElMessage.warning('结束时间不能小于开始时间');
+      return;
+    }
+  }
+  
   paginationState.value.page = 1;
   refreshTableData();
 }
@@ -313,6 +324,12 @@ onMounted(() => {
             format="YYYY-MM-DD HH:mm:ss"
             value-format="YYYY-MM-DD HH:mm:ss"
             clearable
+            :disabled-date="(time) => {
+              if (searchForm.endTime) {
+                return time.getTime() > new Date(searchForm.endTime).getTime();
+              }
+              return false;
+            }"
           ></el-date-picker>
         </el-form-item>
         <el-form-item label="结束时间">
@@ -323,6 +340,12 @@ onMounted(() => {
             format="YYYY-MM-DD HH:mm:ss"
             value-format="YYYY-MM-DD HH:mm:ss"
             clearable
+            :disabled-date="(time) => {
+              if (searchForm.startTime) {
+                return time.getTime() < new Date(searchForm.startTime).getTime();
+              }
+              return false;
+            }"
           ></el-date-picker>
         </el-form-item>
         <el-form-item>
