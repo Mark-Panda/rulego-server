@@ -33,6 +33,24 @@ const componentCategoryOptions = [
   { label: '自定义组件', value: 'custom' }
 ];
 
+// 检查组件状态（是否已安装、是否需要升级）
+async function checkComponentStatus(id) {
+  try {
+    // 调用组件详情接口
+    const detailRes = await Api.getDynamicComponentDetail(id);
+    return {
+      installed: !!detailRes, // 如果能获取到详情，说明已安装
+      updateTime: detailRes?.ruleChain?.additionalInfo?.updateTime || ''
+    };
+  } catch (error) {
+    // 如果接口返回错误，说明组件未安装
+    return {
+      installed: false,
+      updateTime: ''
+    };
+  }
+}
+
 async function refreshTableData() {
   loading.value = true;
   try {
@@ -47,54 +65,30 @@ async function refreshTableData() {
     const res = await Api.getMarketComponents(params);
     console.log('组件市场API返回数据:', res);
     
-    // 获取已安装组件列表，用于比较
-    const installedRes = await Api.getInstalledComponents();
-    const installedComponents = {};
-    
-    // 处理已安装组件数据
-    if (installedRes && installedRes.nodes && Array.isArray(installedRes.nodes)) {
-      installedRes.nodes.forEach(item => {
-        // 从组件市场下载的组件，category为custom，type是组件id
-        if (item.category === 'custom' && item.type) {
-          installedComponents[item.type] = {
-            installed: true,
-            updateTime: item.additionalInfo?.updateTime || ''
-          };
-        } else if (item.id) {
-          installedComponents[item.id] = {
-            installed: true,
-            updateTime: item.additionalInfo?.updateTime || ''
-          };
-        }
-      });
-    }
-    
     // 处理API返回的数据结构
     if (res && res.items && Array.isArray(res.items) && res.items.length > 0) {
       // 处理数据，提取需要的字段
-      const processedData = res.items.map(item => {
+      const processedData = [];
+      for (const item of res.items) {
         const ruleChain = item.ruleChain || {};
         const additionalInfo = ruleChain.additionalInfo || {};
         const id = ruleChain.id;
         
-        // 检查组件是否已安装
-        const isInstalled = installedComponents[id]?.installed || false;
-        // 检查是否需要升级（更新时间不一致）
-        const needUpgrade = isInstalled && 
-          installedComponents[id]?.updateTime !== additionalInfo.updateTime;
+        // 检查组件状态
+        const status = await checkComponentStatus(id);
         
-        return {
+        processedData.push({
           id: id,
           name: ruleChain.name || '未命名组件',
           root: ruleChain.root ? '是' : '否',
           description: additionalInfo.description || '-',
           author: additionalInfo.username || '-',
           updateTime: additionalInfo.updateTime || '-',
-          installed: isInstalled,
-          needUpgrade: needUpgrade,
+          installed: status.installed,
+          needUpgrade: status.installed && status.updateTime !== additionalInfo.updateTime,
           _original: item // 保存原始数据
-        };
-      });
+        });
+      }
       
       tableData.value = processedData;
       paginationState.value.total = res.total || processedData.length;

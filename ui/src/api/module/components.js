@@ -23,7 +23,7 @@ export function getInstalledComponents(params) {
  * @returns {Promise} 返回组件市场列表
  */
 export function getMarketComponents(params) {
-  return request.get('marketplace/components', { params });
+  return request.get('/marketplace/components', { params });
 }
 
 /**
@@ -52,4 +52,13 @@ export function uninstallComponent(id) {
  */
 export function getComponentDetail(id) {
   return request.get(`/components/${id}`);
+}
+
+/**
+ * 获取自定义组件详情
+ * @param {String} id 组件ID
+ * @returns {Promise} 返回自定义组件详情
+ */
+export function getDynamicComponentDetail(id) {
+  return request.get(`/dynamic-components/${id}`);
 }

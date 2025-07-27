@@ -21,19 +21,28 @@ func NewRuleDaoToDataBase(config config.Config, username string) (*RuleDao, erro
 // 保存或更新到数据库
 func (d *RuleDao) SaveToDataBase(username, chainId string, def []byte) error {
 	v, _ := json.Format(def)
-	ruleConfigInfo, gErr := FindRegulationByRuleChainId(chainId)
-	if gErr != nil {
-		return gErr
-	}
-	if ruleConfigInfo != nil && ruleConfigInfo.RuleChainId != "" {
-		return UpdateRegulationByRuleChainId(chainId, string(v))
-	}
 	// def 转成 types.RuleChain
 	var ruleChain types.RuleChain
 	if err := json.Unmarshal(def, &ruleChain); err != nil {
 		return err
 	}
 	t := carbon.Now(carbon.Shanghai).StdTime()
+	ruleConfigInfo, gErr := FindRegulationByRuleChainId(chainId)
+	if gErr != nil {
+		return gErr
+	}
+	if ruleConfigInfo != nil && ruleConfigInfo.RuleChainId != "" {
+		updateData := map[string]interface{}{
+			"rule_config": string(v),
+			"root":        ruleChain.RuleChain.Root,
+			"disabled":    ruleChain.RuleChain.Disabled,
+			"name":        ruleChain.RuleChain.Name,
+			"updated_at":  &t,
+		}
+
+		return UpdateRegulationByRuleChainId(chainId, updateData)
+	}
+
 	createInfo := model.Regulation{
 		UserName:    username,
 		Root:        ruleChain.RuleChain.Root,
@@ -49,7 +58,7 @@ func (d *RuleDao) SaveToDataBase(username, chainId string, def []byte) error {
 
 // 从数据库删除规则链
 func (d *RuleDao) DeleteToDataBase(username, chainId string) error {
-	return DeleteRegulationByRuleChainId(chainId)
+	return DeleteRegulationByRuleChainIdPhysical(chainId)
 }
 
 // 按规则链id从数据库查询规则链

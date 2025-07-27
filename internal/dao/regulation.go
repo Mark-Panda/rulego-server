@@ -20,8 +20,10 @@ func CreateRegulation(r model.Regulation) error {
 }
 
 // 根据ID更新规则链
-func UpdateRegulationByRuleChainId(ruleChainId string, ruleConfig string) error {
-	return model.DBClient.Client.Model(&model.Regulation{}).Where("rule_chain_id = ?", ruleChainId).Update("rule_config", ruleConfig).Error
+func UpdateRegulationByRuleChainId(ruleChainId string, data map[string]interface{}) error {
+
+	return model.DBClient.Client.Model(&model.Regulation{}).Where("rule_chain_id = ?", ruleChainId).Updates(data).Error
+	// return model.DBClient.Client.Model(&model.Regulation{}).Where("rule_chain_id = ?", ruleChainId).Update("rule_config", ruleConfig).Error
 }
 
 // 根据规则链ID查询规则链信息
@@ -41,6 +43,12 @@ func SaveRegulation(r model.Regulation) error {
 func DeleteRegulationByRuleChainId(ruleChainId string) error {
 	r := model.Regulation{}
 	err := model.DBClient.Client.Model(&model.Regulation{}).Where("rule_chain_id = ?", ruleChainId).Delete(&r).Error
+	return err
+}
+
+// 物理删除规则链
+func DeleteRegulationByRuleChainIdPhysical(ruleChainId string) error {
+	err := model.DBClient.Client.Model(&model.Regulation{}).Where("rule_chain_id = ?", ruleChainId).Unscoped().Delete(&model.Regulation{}).Error
 	return err
 }
 
