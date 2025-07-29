@@ -6,7 +6,7 @@ RUN npm install
 COPY ui/ .
 # 定义要修改的文件路径
 # 使用 sed 命令替换 IP 地址和端口
-RUN sed -i 's/8.134.32.225:9090/127.0.0.1:9099/g' "public/config.js"
+# RUN sed -i 's/8.134.32.225:9090/127.0.0.1:9099/g' "public/config.js"
 
 
 RUN npm run build

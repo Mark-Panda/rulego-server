@@ -1,5 +1,13 @@
 version: "3"
 services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: frontend
+    ports:
+      - "9998:80"
+    restart: always
   workflow:
     build:
       context: .
