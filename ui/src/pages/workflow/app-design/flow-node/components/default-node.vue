@@ -25,7 +25,7 @@ const formData = computed(() => props?.properties?.formData || {});
 <template>
   <div
     :id="model.id"
-    class="box-border rounded-2xl border-2 border-solid border-transparent bg-white"
+    class="box-border rounded-2xl border-2 border-solid border-transparent"
     :style="[
       isSelected
         ? { border: '2px solid #4669fc' }
@@ -33,6 +33,7 @@ const formData = computed(() => props?.properties?.formData || {});
       {
         width: `${properties.width || 240}px`,
         height: `${properties.height || 40}px`,
+        background: 'linear-gradient(to bottom, #f8fbff 0%, #f0f7ff 50%, #e6f3ff 100%)',
       },
     ]"
   >

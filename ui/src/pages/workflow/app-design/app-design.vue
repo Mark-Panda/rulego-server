@@ -149,6 +149,8 @@ function clearFlowData() {
 function rerenderFlowData() {
   if (!flowViewRef.value) return;
   const lf = flowViewRef.value.getLf();
+  if (!lf) return;
+  
   const userData = cloneDeep(props.modelValue);
   const { nodes, edges } = mapRuleGoModelToFlowDataModel(
     userData,
@@ -461,9 +463,27 @@ function render() {
 }
 
 onMounted(async () => {
-  await initMenuList();
-  generateFlowData();
-  window.addEventListener('keydown', handleKeyDown);
+  try {
+    // 等待DOM完全挂载
+    await nextTick();
+    
+    // 初始化菜单列表
+    await initMenuList();
+    
+    // 等待一个短暂的时间确保所有子组件都已挂载
+    setTimeout(() => {
+      try {
+        generateFlowData();
+      } catch (error) {
+        console.error('生成流程数据失败:', error);
+      }
+    }, 100);
+    
+    // 添加键盘事件监听
+    window.addEventListener('keydown', handleKeyDown);
+  } catch (error) {
+    console.error('组件初始化失败:', error);
+  }
 });
 
 onBeforeUnmount(() => {

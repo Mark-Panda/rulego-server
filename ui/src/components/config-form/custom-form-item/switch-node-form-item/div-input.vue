@@ -49,7 +49,7 @@ function initEditor() {
 watch(
   () => props.modelValue,
   (val, oVal) => {
-    if (editorV.hasFocus || val === oVal) {
+    if (!editorV || editorV.hasFocus || val === oVal) {
       return;
     }
     editorV.dispatch({

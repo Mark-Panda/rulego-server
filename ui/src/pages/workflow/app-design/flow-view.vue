@@ -495,100 +495,119 @@ function updateSelectedNodePropertiesFormData(data) {
 }
 
 function initFlow() {
-  if (!flowContainerRef.value) return;
-  lf = new LogicFlow({
-    container: flowContainerRef.value,
-    plugins: [MiniMap, Menu],
-    background: {
-      backgroundColor: '#f0f2f7',
-    },
-    pluginsOptions: {
-      miniMap: miniMapOptions,
-    },
-    allowResize: true, // 允许自定义调整大小
-  });
-
-  lf.on('node:click', flowNodeClickHandler);
-  lf.on('custom:anchor-click', flowAnchorClickHandler);
-  lf.on('anchor:drop', flowAnchorDropHandler);
-  lf.on('node:mouseup', handleMouseup);
-
-  flowNodes.forEach((node) => {
-    register(node, lf);
-  });
-
-  lf.register(CustomBezierEdge);
-  lf.setDefaultEdgeType('custom-bezier');
-
-  lf.extension.menu.setMenuConfig({
-    nodeMenu: [
-      {
-        text: '删除节点',
-        callback(node) {
-          deleteNode(node.id);
-        },
+  if (!flowContainerRef.value) {
+    console.warn('flowContainerRef.value is not available');
+    return;
+  }
+  
+  // 检查容器是否有尺寸
+  const rect = flowContainerRef.value.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) {
+    console.warn('Container has no size, delaying LogicFlow initialization');
+    return;
+  }
+  
+  try {
+    lf = new LogicFlow({
+      container: flowContainerRef.value,
+      plugins: [MiniMap, Menu],
+      background: {
+        backgroundColor: '#fafbfc',
+        backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
+        backgroundSize: '20px 20px',
       },
-    ],
-    edgeMenu: [
-      {
-        text: '删除边',
-        callback(edge) {
-          deleteEdge(edge.id);
-        },
+      pluginsOptions: {
+        miniMap: miniMapOptions,
       },
-    ],
-    graphMenu: [
-      {
-        text: '添加注释',
-        callback: () => {
-          const point = lf.getPointByClient({
-            x: mouseX.value,
-            y: mouseY.value,
-          });
+      allowResize: true, // 允许自定义调整大小
+    });
 
-          emit('addComment', {
-            x: mouseX.value,
-            y: mouseY.value,
-            canvasX: point.x,
-            canvasY: point.y,
-          });
-        },
-      },
-    ],
-  });
+    lf.on('node:click', flowNodeClickHandler);
+    lf.on('custom:anchor-click', flowAnchorClickHandler);
+    lf.on('anchor:drop', flowAnchorDropHandler);
+    lf.on('node:mouseup', handleMouseup);
 
-  [...ENDPOINTS_NODE_TYPE_KEYS, 'endpoint-node', 'start'].forEach((type) => {
-    lf.extension.menu.setMenuByType({
-      type: type,
-      menu: [
+    flowNodes.forEach((node) => {
+      register(node, lf);
+    });
+
+    lf.register(CustomBezierEdge);
+    lf.setDefaultEdgeType('custom-bezier');
+
+    lf.extension.menu.setMenuConfig({
+      nodeMenu: [
         {
-          text: '变更节点',
+          text: '删除节点',
           callback(node) {
-            closeNodeFormBus.emit();
-            showNodeMenuBus.emit(mouseX.value, mouseY.value);
-            changeNodeState.value.oldNode = node;
+            deleteNode(node.id);
+          },
+        },
+      ],
+      edgeMenu: [
+        {
+          text: '删除边',
+          callback(edge) {
+            deleteEdge(edge.id);
+          },
+        },
+      ],
+      graphMenu: [
+        {
+          text: '添加注释',
+          callback: () => {
+            const point = lf.getPointByClient({
+              x: mouseX.value,
+              y: mouseY.value,
+            });
+
+            emit('addComment', {
+              x: mouseX.value,
+              y: mouseY.value,
+              canvasX: point.x,
+              canvasY: point.y,
+            });
           },
         },
       ],
     });
-  });
 
-  lf.render(flowData.value);
-
-  lf.extension.miniMap.show();
-
-  jumpToNodeBus.on((nodeId) => {
-    const node = lf.getNodeModelById(nodeId);
-    if (node) {
-      lf.focusOn({
-        id: node.id,
+    [...ENDPOINTS_NODE_TYPE_KEYS, 'endpoint-node', 'start'].forEach((type) => {
+      lf.extension.menu.setMenuByType({
+        type: type,
+        menu: [
+          {
+            text: '变更节点',
+            callback(node) {
+              closeNodeFormBus.emit();
+              showNodeMenuBus.emit(mouseX.value, mouseY.value);
+              changeNodeState.value.oldNode = node;
+            },
+          },
+        ],
       });
-    }
-  });
+    });
 
-  deleteFlowNodeByIdBus.on((nodeId) => {
-    deleteNode(nodeId);
-  });
+    lf.render(flowData.value);
+
+    lf.extension.miniMap.show();
+
+    jumpToNodeBus.on((nodeId) => {
+      const node = lf.getNodeModelById(nodeId);
+      if (node) {
+        lf.focusOn({
+          id: node.id,
+        });
+      }
+    });
+
+    deleteFlowNodeByIdBus.on((nodeId) => {
+      deleteNode(nodeId);
+    });
+    
+    console.log('LogicFlow initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize LogicFlow:', error);
+  }
 }
 
 function lfGetGraphRawData() {
@@ -821,15 +840,69 @@ const getSelectedNode = () => {
   return lf.getNodeModelById(selectedNodeId.value);
 };
 
-onMounted(() => {
-  initFlow();
-  updateAllNodePropertiesHeight();
+onMounted(async () => {
+  // 等待DOM完全挂载
+  await nextTick();
+  
+  // 确保容器元素存在且有尺寸
+  if (flowContainerRef.value) {
+    // 等待容器获得尺寸
+    const checkContainer = () => {
+      const rect = flowContainerRef.value.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        // 容器有尺寸，可以初始化LogicFlow
+        setTimeout(() => {
+          try {
+            initFlow();
+            updateAllNodePropertiesHeight();
+          } catch (error) {
+            console.error('LogicFlow初始化失败:', error);
+          }
+        }, 100);
+      } else {
+        // 容器还没有尺寸，继续等待
+        setTimeout(checkContainer, 50);
+      }
+    };
+    
+    checkContainer();
+  }
 });
 
 onBeforeUnmount(() => {
-  changeFlowNodeBus.off(changeFlowNodeHandler);
-  lf.destroy();
-  lf = null;
+  try {
+    // 清理事件监听器
+    if (changeFlowNodeBus && typeof changeFlowNodeBus.off === 'function') {
+      changeFlowNodeBus.off(changeFlowNodeHandler);
+    }
+    
+    // 清理LogicFlow实例
+    if (lf) {
+      try {
+        // 移除所有事件监听器
+        lf.off('node:click', flowNodeClickHandler);
+        lf.off('custom:anchor-click', flowAnchorClickHandler);
+        lf.off('anchor:drop', flowAnchorDropHandler);
+        lf.off('node:mouseup', handleMouseup);
+        
+        // 清理总线事件
+        if (jumpToNodeBus && typeof jumpToNodeBus.off === 'function') {
+          jumpToNodeBus.off();
+        }
+        if (deleteFlowNodeByIdBus && typeof deleteFlowNodeByIdBus.off === 'function') {
+          deleteFlowNodeByIdBus.off();
+        }
+        
+        // 销毁LogicFlow实例
+        lf.destroy();
+      } catch (error) {
+        console.error('LogicFlow销毁时出错:', error);
+      }
+      lf = null;
+    }
+  } catch (error) {
+    console.error('组件销毁时出错:', error);
+  }
 });
 
 defineExpose({

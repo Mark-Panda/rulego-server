@@ -4,7 +4,7 @@ import { NODE_TITLE_HEIGHT } from '@src/pages/workflow/app-design/constant';
 const props = defineProps({
   icon: {
     type: String,
-    default: 'el-icon-menu',
+    default: 'el-icon-operation',
   },
   title: {
     type: String,
