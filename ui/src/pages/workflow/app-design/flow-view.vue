@@ -507,14 +507,16 @@ function updateSelectedNodePropertiesFormData(data) {
 function initFlow() {
   if (!flowContainerRef.value) {
     console.warn('flowContainerRef.value is not available');
-    return;
+    return false;
   }
   
   // 检查容器是否有尺寸
   const rect = flowContainerRef.value.getBoundingClientRect();
+  console.log('容器尺寸:', rect.width, 'x', rect.height);
+  
   if (rect.width === 0 || rect.height === 0) {
     console.warn('Container has no size, delaying LogicFlow initialization');
-    return;
+    return false;
   }
   
   try {
@@ -600,7 +602,13 @@ function initFlow() {
 
     lf.render(flowData.value);
 
-    lf.extension.miniMap.show();
+    // 延迟显示小地图，确保渲染完成
+    setTimeout(() => {
+      if (lf && lf.extension && lf.extension.miniMap) {
+        lf.extension.miniMap.show();
+        console.log('LogicFlow 和小地图初始化成功');
+      }
+    }, 200);
 
     jumpToNodeBus.on((nodeId) => {
       const node = lf.getNodeModelById(nodeId);
@@ -616,8 +624,10 @@ function initFlow() {
     });
     
     console.log('LogicFlow initialized successfully');
+    return true;
   } catch (error) {
     console.error('Failed to initialize LogicFlow:', error);
+    return false;
   }
 }
 
@@ -845,6 +855,142 @@ function getLf() {
   return lf;
 }
 
+/**
+ * 获取小地图当前显示状态
+ */
+function getMiniMapVisible() {
+  try {
+    if (!lf || !lf.extension || !lf.extension.miniMap) {
+      console.warn('LogicFlow 或 miniMap 扩展未初始化');
+      return false;
+    }
+
+    // 等待一下确保DOM更新
+    const miniMapElement = document.querySelector('.lf-mini-map');
+    if (!miniMapElement) {
+      console.warn('小地图元素未找到');
+      return false;
+    }
+
+    // 检查元素是否可见
+    const isVisible = miniMapElement.offsetParent !== null && 
+                     getComputedStyle(miniMapElement).display !== 'none' &&
+                     getComputedStyle(miniMapElement).visibility !== 'hidden';
+    
+    console.log('小地图当前状态:', isVisible ? '显示' : '隐藏');
+    return isVisible;
+  } catch (error) {
+    console.error('获取小地图状态时出错:', error);
+    return false;
+  }
+}
+
+/**
+ * 显示小地图
+ */
+function showMiniMap() {
+  if (lf && lf.extension && lf.extension.miniMap) {
+    try {
+      lf.extension.miniMap.show();
+      console.log('小地图显示方法已调用');
+      
+      // 验证是否成功显示
+      setTimeout(() => {
+        const miniMapElement = document.querySelector('.lf-mini-map');
+        if (miniMapElement) {
+          console.log('小地图元素状态:', {
+            offsetParent: miniMapElement.offsetParent !== null,
+            display: getComputedStyle(miniMapElement).display,
+            visibility: getComputedStyle(miniMapElement).visibility
+          });
+        }
+      }, 100);
+    } catch (error) {
+      console.error('显示小地图时出错:', error);
+    }
+  } else {
+    console.warn('LogicFlow 或 miniMap 扩展未初始化');
+  }
+}
+
+/**
+ * 隐藏小地图
+ */
+function hideMiniMap() {
+  if (lf && lf.extension && lf.extension.miniMap) {
+    try {
+      lf.extension.miniMap.hide();
+      console.log('小地图隐藏方法已调用');
+    } catch (error) {
+      console.error('隐藏小地图时出错:', error);
+    }
+  } else {
+    console.warn('LogicFlow 或 miniMap 扩展未初始化');
+  }
+}
+
+/**
+ * 切换小地图显示状态
+ */
+function toggleMiniMap() {
+  try {
+    if (!lf || !lf.extension || !lf.extension.miniMap) {
+      console.warn('LogicFlow 或 miniMap 扩展未初始化');
+      return false;
+    }
+
+    // 等待DOM更新后再检查
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const miniMapElement = document.querySelector('.lf-mini-map');
+        if (!miniMapElement) {
+          console.warn('小地图元素未找到，尝试重新初始化');
+          // 尝试重新显示小地图
+          try {
+            lf.extension.miniMap.show();
+            setTimeout(() => {
+              const retryElement = document.querySelector('.lf-mini-map');
+              if (retryElement) {
+                console.log('重新初始化小地图成功');
+                resolve(true);
+              } else {
+                console.error('重新初始化小地图失败');
+                resolve(false);
+              }
+            }, 100);
+          } catch (error) {
+            console.error('重新初始化小地图时出错:', error);
+            resolve(false);
+          }
+          return;
+        }
+
+        // 检查当前显示状态
+        const isVisible = miniMapElement.offsetParent !== null && 
+                         getComputedStyle(miniMapElement).display !== 'none' &&
+                         getComputedStyle(miniMapElement).visibility !== 'hidden';
+        
+        console.log('当前小地图状态:', isVisible ? '显示' : '隐藏');
+        
+        if (isVisible) {
+          // 当前显示，需要隐藏
+          lf.extension.miniMap.hide();
+          console.log('隐藏小地图');
+          resolve(false);
+        } else {
+          // 当前隐藏，需要显示
+          lf.extension.miniMap.show();
+          console.log('显示小地图');
+          resolve(true);
+        }
+      }, 50);
+    });
+  } catch (error) {
+    console.error('切换小地图时出错:', error);
+    return false;
+  }
+}
+
 changeFlowNodeBus.on(changeFlowNodeHandler);
 
 const getSelectedNode = () => {
@@ -857,26 +1003,44 @@ onMounted(async () => {
   
   // 确保容器元素存在且有尺寸
   if (flowContainerRef.value) {
+    let retryCount = 0;
+    const maxRetries = 20; // 最多重试20次，每次50ms，总共1秒
+    
     // 等待容器获得尺寸
     const checkContainer = () => {
       const rect = flowContainerRef.value.getBoundingClientRect();
+      console.log(`第${retryCount + 1}次检查容器尺寸:`, rect.width, 'x', rect.height);
+      
       if (rect.width > 0 && rect.height > 0) {
         // 容器有尺寸，可以初始化LogicFlow
+        console.log('容器尺寸正常，开始初始化LogicFlow');
         setTimeout(() => {
           try {
-            initFlow();
-            updateAllNodePropertiesHeight();
+            const success = initFlow();
+            if (success) {
+              updateAllNodePropertiesHeight();
+              console.log('LogicFlow初始化完成');
+            } else {
+              console.error('LogicFlow初始化失败');
+            }
           } catch (error) {
             console.error('LogicFlow初始化失败:', error);
           }
         }, 100);
       } else {
         // 容器还没有尺寸，继续等待
-        setTimeout(checkContainer, 50);
+        retryCount++;
+        if (retryCount < maxRetries) {
+          setTimeout(checkContainer, 50);
+        } else {
+          console.error('容器在1秒内未获得有效尺寸，LogicFlow初始化失败');
+        }
       }
     };
     
     checkContainer();
+  } else {
+    console.error('flowContainerRef.value 不存在');
   }
 });
 
@@ -930,6 +1094,10 @@ defineExpose({
   addCommentNode,
   getLf,
   updateAllNodePropertiesHeight,
+  showMiniMap,
+  hideMiniMap,
+  toggleMiniMap,
+  getMiniMapVisible,
 });
 </script>
 

@@ -10,8 +10,12 @@ const props = defineProps({
       isSourceCodeVisible: false,
     },
   },
+  isMiniMapVisible: {
+    type: Boolean,
+    default: true,
+  },
 })
-const emit = defineEmits(['update:modelValue', 'optimize-layout'])
+const emit = defineEmits(['update:modelValue', 'optimize-layout', 'toggle-minimap'])
 
 /**
  * 设置视图模式
@@ -43,6 +47,14 @@ function setViewMode(mode) {
  */
 function optimizeLayout() {
   emit('optimize-layout')
+}
+
+/**
+ * 切换小地图显示状态
+ */
+function toggleMiniMap() {
+  console.log('工具按钮：toggleMiniMap 被点击');
+  emit('toggle-minimap');
 }
 </script>
 <template>
@@ -111,6 +123,23 @@ function optimizeLayout() {
         >
           <el-icon :size="16">
             <el-icon-magic-stick />
+          </el-icon>
+        </el-button>
+      </el-tooltip>
+    </div>
+    
+    <div class="toggle-btn-wrapper">
+      <el-tooltip :content="isMiniMapVisible ? '隐藏小地图' : '显示小地图'" placement="top" :show-after="500">
+        <el-button 
+          :type="isMiniMapVisible ? 'primary' : ''"
+          :class="{ 'is-active': isMiniMapVisible }"
+          size="small"
+          @click="toggleMiniMap"
+          class="toggle-btn"
+          circle
+        >
+          <el-icon :size="16">
+            <el-icon-location />
           </el-icon>
         </el-button>
       </el-tooltip>

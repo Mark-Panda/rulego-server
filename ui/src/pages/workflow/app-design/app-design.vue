@@ -472,6 +472,61 @@ function render() {
   flowViewRef.value.updateAllNodePropertiesHeight();
 }
 
+/**
+ * 显示小地图
+ */
+function showMiniMap() {
+  if (!flowViewRef.value) return false;
+  return flowViewRef.value.showMiniMap();
+}
+
+/**
+ * 隐藏小地图
+ */
+function hideMiniMap() {
+  if (!flowViewRef.value) return false;
+  return flowViewRef.value.hideMiniMap();
+}
+
+/**
+ * 获取小地图当前显示状态
+ */
+async function getMiniMapVisible() {
+  console.log('app-design：getMiniMapVisible 被调用');
+  if (!flowViewRef.value) {
+    console.error('app-design：flowViewRef.value 不存在');
+    return false;
+  }
+  try {
+    const result = await flowViewRef.value.getMiniMapVisible();
+    console.log('app-design：getMiniMapVisible 返回:', result);
+    return result;
+  } catch (error) {
+    console.error('app-design：调用 flow-view getMiniMapVisible 时出错:', error);
+    return false;
+  }
+}
+
+/**
+ * 切换小地图显示状态
+ */
+async function toggleMiniMap() {
+  console.log('app-design：toggleMiniMap 被调用');
+  if (!flowViewRef.value) {
+    console.error('app-design：flowViewRef.value 不存在');
+    return false;
+  }
+  console.log('app-design：调用 flow-view 的 toggleMiniMap 方法');
+  try {
+    const result = await flowViewRef.value.toggleMiniMap();
+    console.log('app-design：flow-view toggleMiniMap 返回:', result);
+    return result;
+  } catch (error) {
+    console.error('app-design：调用 flow-view toggleMiniMap 时出错:', error);
+    return false;
+  }
+}
+
 onMounted(async () => {
   try {
     // 等待DOM完全挂载
@@ -514,6 +569,10 @@ defineExpose({
   openDrawer,
   closeDrawer,
   render,
+  showMiniMap,
+  hideMiniMap,
+  toggleMiniMap,
+  getMiniMapVisible,
 });
 </script>
 

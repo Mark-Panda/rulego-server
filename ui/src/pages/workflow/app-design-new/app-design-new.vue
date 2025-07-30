@@ -29,6 +29,7 @@ const toolButtons = ref({
   isSourceCodeVisible: false,
 });
 const isAiVisible = ref(false);
+const isMiniMapVisible = ref(true); // 小地图显示状态
 
 function handelDesignToJson() {
   const flowData = appDesignRef.value.getData();
@@ -133,6 +134,49 @@ async function handleOptimizeLayout() {
     }
   } catch (error) {
     console.error('Error in handleOptimizeLayout:', error);
+  }
+}
+
+/**
+ * 同步小地图状态
+ */
+async function syncMiniMapState() {
+  console.log('app-design-new：syncMiniMapState 被调用');
+  
+  if (appDesignRef.value && appDesignRef.value.getMiniMapVisible) {
+    try {
+      const currentState = await appDesignRef.value.getMiniMapVisible();
+      console.log('app-design-new：获取到的小地图状态:', currentState);
+      isMiniMapVisible.value = currentState;
+      console.log('app-design-new：同步后的 isMiniMapVisible:', isMiniMapVisible.value);
+    } catch (error) {
+      console.error('app-design-new：同步小地图状态时出错:', error);
+    }
+  } else {
+    console.warn('app-design-new：appDesignRef.value 或 getMiniMapVisible 方法不存在');
+  }
+}
+
+/**
+ * 处理小地图切换
+ */
+async function handleToggleMiniMap() {
+  console.log('app-design-new：handleToggleMiniMap 被调用');
+  
+  if (appDesignRef.value && appDesignRef.value.toggleMiniMap) {
+    console.log('app-design-new：调用 app-design 的 toggleMiniMap 方法');
+    try {
+      const result = await appDesignRef.value.toggleMiniMap();
+      console.log('app-design-new：toggleMiniMap 返回状态:', result);
+      
+      // 同步状态
+      isMiniMapVisible.value = result;
+      console.log('app-design-new：更新后的 isMiniMapVisible:', isMiniMapVisible.value);
+    } catch (error) {
+      console.error('app-design-new：调用 toggleMiniMap 时出错:', error);
+    }
+  } else {
+    console.error('app-design-new：appDesignRef.value 或 toggleMiniMap 方法不存在');
   }
 }
 
@@ -337,6 +381,11 @@ onMounted(async () => {
     setTimeout(() => {
       try {
         logicflowNodeMouseUp.on(handelDesignToJson);
+        
+        // 同步小地图状态
+        setTimeout(() => {
+          syncMiniMapState();
+        }, 500); // 等待LogicFlow完全初始化
       } catch (error) {
         console.error('事件监听器注册失败:', error);
       }
@@ -385,7 +434,13 @@ defineExpose({
     <div v-if="false" class="flex flex-1 overflow-hidden">
       <chat-list-view class="flex-1" />
     </div>
-    <tool-buttons v-model="toolButtons" @optimize-layout="handleOptimizeLayout" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50" />
+    <tool-buttons 
+      v-model="toolButtons" 
+      :is-mini-map-visible="isMiniMapVisible"
+      @optimize-layout="handleOptimizeLayout" 
+      @toggle-minimap="handleToggleMiniMap"
+      class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50" 
+    />
     <!--20250507暂时注释掉ai助手-->
     <!-- <div @click="isAiVisible = true" class="absolute bottom-24 right-10 size-[50px] flex justify-center items-center rounded-full bg-white cursor-pointer border">
       <el-icon :size="28">
