@@ -140,6 +140,16 @@ function flowAnchorDropHandler() {
   updateSelectedNodePropertiesNextNodes();
 }
 
+function flowBlankClickHandler() {
+  // 点击空白画布时关闭节点表单
+  closeNodeFormBus.emit();
+  // 清除选中状态
+  if (selectedNodeId.value) {
+    updateNodePropertiesStatusIsSelectedById(selectedNodeId.value, false);
+    setSelectedNodeId('');
+  }
+}
+
 /**
  * @description 根据 id 计算节点高度
  * @param nodeId string
@@ -526,6 +536,7 @@ function initFlow() {
     lf.on('custom:anchor-click', flowAnchorClickHandler);
     lf.on('anchor:drop', flowAnchorDropHandler);
     lf.on('node:mouseup', handleMouseup);
+    lf.on('blank:click', flowBlankClickHandler);
 
     flowNodes.forEach((node) => {
       register(node, lf);
@@ -884,6 +895,7 @@ onBeforeUnmount(() => {
         lf.off('custom:anchor-click', flowAnchorClickHandler);
         lf.off('anchor:drop', flowAnchorDropHandler);
         lf.off('node:mouseup', handleMouseup);
+        lf.off('blank:click', flowBlankClickHandler);
         
         // 清理总线事件
         if (jumpToNodeBus && typeof jumpToNodeBus.off === 'function') {
