@@ -49,7 +49,7 @@ let miniMapOptions = {
   width: 107,
   height: 72,
   leftPosition: 16,
-  bottomPosition: 16,
+  topPosition: 16,
 };
 const flowContainerRef = ref();
 const selectedNodeId = ref('');

@@ -48,7 +48,7 @@ function optimizeLayout() {
 <template>
   <div class="view-toggle-container">
     <div class="toggle-btn-wrapper">
-      <el-tooltip content="流程图视图" placement="right" :show-after="500">
+      <el-tooltip content="流程图视图" placement="top" :show-after="500">
         <el-button 
           :type="modelValue.isFlowVisible && !modelValue.isSourceCodeVisible ? 'primary' : ''"
           :class="{ 'is-active': modelValue.isFlowVisible && !modelValue.isSourceCodeVisible }"
@@ -65,7 +65,7 @@ function optimizeLayout() {
     </div>
     
     <div class="toggle-btn-wrapper">
-      <el-tooltip content="源码视图" placement="right" :show-after="500">
+      <el-tooltip content="源码视图" placement="top" :show-after="500">
         <el-button 
           :type="!modelValue.isFlowVisible && modelValue.isSourceCodeVisible ? 'primary' : ''"
           :class="{ 'is-active': !modelValue.isFlowVisible && modelValue.isSourceCodeVisible }"
@@ -82,7 +82,7 @@ function optimizeLayout() {
     </div>
     
     <div class="toggle-btn-wrapper">
-      <el-tooltip content="分屏视图" placement="right" :show-after="500">
+      <el-tooltip content="分屏视图" placement="top" :show-after="500">
         <el-button 
           :type="modelValue.isFlowVisible && modelValue.isSourceCodeVisible ? 'primary' : ''"
           :class="{ 'is-active': modelValue.isFlowVisible && modelValue.isSourceCodeVisible }"
@@ -102,7 +102,7 @@ function optimizeLayout() {
     <div class="divider"></div>
     
     <div class="toggle-btn-wrapper">
-      <el-tooltip content="优化布局" placement="right" :show-after="500">
+      <el-tooltip content="优化布局" placement="top" :show-after="500">
         <el-button 
           size="small"
           @click="optimizeLayout"
@@ -121,15 +121,15 @@ function optimizeLayout() {
 <style scoped>
 .view-toggle-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 6px;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
-  padding: 10px 6px;
+  padding: 6px 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  min-width: 48px;
+  min-height: 48px;
 }
 
 .toggle-btn-wrapper {
@@ -138,9 +138,10 @@ function optimizeLayout() {
 }
 
 .divider {
-  height: 1px;
+  width: 1px;
+  height: 24px;
   background: var(--el-border-color-lighter);
-  margin: 4px 8px;
+  margin: 0 4px;
   opacity: 0.6;
 }
 
@@ -169,7 +170,7 @@ function optimizeLayout() {
   background: var(--el-color-primary-light-9) !important;
   color: var(--el-color-primary) !important;
   border-color: var(--el-color-primary-light-7) !important;
-  transform: translateX(3px) scale(1.05) !important;
+  transform: translateY(-3px) scale(1.05) !important;
   box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2) !important;
 }
 
@@ -179,7 +180,7 @@ function optimizeLayout() {
   background: var(--el-color-primary) !important;
   border-color: var(--el-color-primary) !important;
   color: white !important;
-  transform: translateX(2px) !important;
+  transform: translateY(-2px) !important;
   box-shadow: 0 4px 12px rgba(64, 158, 255, 0.4) !important;
   position: relative !important;
 }
@@ -188,7 +189,7 @@ function optimizeLayout() {
 .view-toggle-container .toggle-btn.el-button.is-active:hover {
   background: var(--el-color-primary-light-3) !important;
   border-color: var(--el-color-primary-light-3) !important;
-  transform: translateX(3px) scale(1.05) !important;
+  transform: translateY(-3px) scale(1.05) !important;
   box-shadow: 0 4px 16px rgba(64, 158, 255, 0.5) !important;
 }
 

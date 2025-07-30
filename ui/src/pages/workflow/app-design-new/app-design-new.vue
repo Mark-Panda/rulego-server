@@ -385,7 +385,7 @@ defineExpose({
     <div v-if="false" class="flex flex-1 overflow-hidden">
       <chat-list-view class="flex-1" />
     </div>
-    <tool-buttons v-model="toolButtons" @optimize-layout="handleOptimizeLayout" class="absolute left-4 top-1/2 transform -translate-y-1/2 z-10" />
+    <tool-buttons v-model="toolButtons" @optimize-layout="handleOptimizeLayout" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50" />
     <!--20250507暂时注释掉ai助手-->
     <!-- <div @click="isAiVisible = true" class="absolute bottom-24 right-10 size-[50px] flex justify-center items-center rounded-full bg-white cursor-pointer border">
       <el-icon :size="28">
