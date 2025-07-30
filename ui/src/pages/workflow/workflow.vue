@@ -1,7 +1,7 @@
 <script lang="js" setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { cloneDeep } from 'lodash-es';
+import { cloneDeep, isEqual } from 'lodash-es';
 import { ElMessage } from 'element-plus';
 import * as Api from '@src/api';
 import { WORKFLOW_MENU_KEY } from '@src/constant/workflow';
@@ -37,6 +37,24 @@ const formState = ref({
 });
 const bakValue = ref();
 const flowData = ref();
+const originalFlowData = ref(); // 保存原始数据用于比较
+
+// 计算画布是否有变动
+const hasCanvasChanged = computed(() => {
+  if (!originalFlowData.value || !flowData.value) {
+    return false;
+  }
+  return !isEqual(originalFlowData.value, flowData.value);
+});
+
+// 监听flowData变化
+watch(
+  () => flowData.value,
+  (newVal) => {
+    // 深度监听flowData的变化
+  },
+  { deep: true }
+);
 
 function setMenuActiveKey(key) {
   menuActiveKey.value = key;
@@ -68,6 +86,7 @@ async function refreshFormState() {
   const res = await Api.getRulesDetail(id);
   bakValue.value = cloneDeep(res);
   flowData.value = cloneDeep(res);
+  originalFlowData.value = cloneDeep(res); // 保存原始数据
   const { ruleChain } = res;
   formState.value.baseInfoFormState = {
     id: ruleChain.id,
@@ -117,7 +136,12 @@ async function saveHandler() {
 }
 
 async function saveFlowHandler() {
-  const ruleGoModel =flowData.value;
+  if (!hasCanvasChanged.value) {
+    ElMessage.info('画布内容无变动，无需保存');
+    return;
+  }
+  
+  const ruleGoModel = flowData.value;
   const id = ruleGoModel.ruleChain.id;
   await Api.setRules(id, ruleGoModel);
   await refreshFormState();
@@ -158,7 +182,15 @@ onMounted(() => {
       <div class="min-w-[204px] flex-none px-4">
         <template v-if="[WORKFLOW_MENU_KEY.APP_DESIGN].includes(menuActiveKey)">
           <el-button icon="el-icon-video-play" @click="openDrawerHandler">测试</el-button>
-          <el-button icon="el-icon-upload-filled" type="primary" @click="saveFlowHandler">保存</el-button>
+          <el-button 
+            icon="el-icon-upload-filled" 
+            :type="hasCanvasChanged ? 'primary' : ''"
+            :disabled="!hasCanvasChanged"
+            :class="{ 'save-btn-disabled': !hasCanvasChanged, 'save-btn-enabled': hasCanvasChanged }"
+            @click="saveFlowHandler"
+          >
+            保存
+          </el-button>
         </template>
       </div>
     </div>
@@ -178,5 +210,31 @@ onMounted(() => {
 <style scoped>
 .workflow-menu {
   border-bottom: none;
+}
+
+/* 保存按钮启用状态 - 蓝色背景 */
+.save-btn-enabled.el-button--primary {
+  background-color: var(--el-color-primary) !important;
+  border-color: var(--el-color-primary) !important;
+  color: white !important;
+}
+
+.save-btn-enabled.el-button--primary:hover {
+  background-color: var(--el-color-primary-light-3) !important;
+  border-color: var(--el-color-primary-light-3) !important;
+}
+
+/* 保存按钮禁用状态 - 灰色背景 */
+.save-btn-disabled.el-button.is-disabled {
+  background-color: var(--el-disabled-bg-color) !important;
+  border-color: var(--el-disabled-border-color) !important;
+  color: var(--el-disabled-text-color) !important;
+  cursor: not-allowed !important;
+}
+
+.save-btn-disabled.el-button.is-disabled:hover {
+  background-color: var(--el-disabled-bg-color) !important;
+  border-color: var(--el-disabled-border-color) !important;
+  color: var(--el-disabled-text-color) !important;
 }
 </style>
