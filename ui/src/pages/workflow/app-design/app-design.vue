@@ -48,6 +48,7 @@ const showNodeMenuBus = EventBus.showNodeMenu();
 const changeFlowNodeBus = EventBus.changeFlowNode();
 const refreshNodeLogBus = EventBus.refreshNodeLog();
 const clearNodeFormValidateBus = EventBus.clearNodeFormValidate();
+const logicflowNodeMouseUp = EventBus.logicflowNodeMouseUp();
 
 const flowViewRef = ref();
 const containerRef = ref();
@@ -362,6 +363,15 @@ closeNodeFormBus.on(nodeFormCloseHandler);
 showNodeMenuBus.on(showNodeMenuHandler);
 
 /**
+ * 处理流程图数据转换为JSON数据
+ */
+function handelDesignToJson() {
+  const flowData = getData();
+  const ruleGoModel = mapFlowDataModelToRuleGoModel(flowData, props.modelValue);
+  emit('update:modelValue', ruleGoModel);
+}
+
+/**
  * 派发更新事件
  */
 function handleEmitUpdate() {
@@ -470,6 +480,9 @@ onMounted(async () => {
     // 初始化菜单列表
     await initMenuList();
     
+    // 监听节点拖拽结束事件
+    logicflowNodeMouseUp.on(handelDesignToJson);
+    
     // 等待一个短暂的时间确保所有子组件都已挂载
     setTimeout(() => {
       try {
@@ -488,6 +501,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeyDown);
+  logicflowNodeMouseUp.off(handelDesignToJson); // 取消事件监听
   handleEmitUpdate(); // 组件卸载时触发更新事件
 });
 
