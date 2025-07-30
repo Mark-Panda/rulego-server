@@ -34,6 +34,7 @@ function handelDesignToJson() {
   const flowData = appDesignRef.value.getData();
   const ruleGoModel = mapFlowDataModelToRuleGoModel(flowData, val.value);
   val.value = ruleGoModel;
+  emit("update:modelValue", val.value);
 }
 
 let jsonToDocTimer = 0;
