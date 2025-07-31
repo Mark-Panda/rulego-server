@@ -10,11 +10,7 @@ export function getThemeMode() {
         return savedMode;
     }
 
-    // 检查系统偏好
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark';
-    }
-
+    // 默认使用明亮模式，不检查系统偏好
     return 'light';
 }
 

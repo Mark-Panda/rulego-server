@@ -2,7 +2,6 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { getThemeMode, toggleThemeMode } from '@src/utils/theme';
 
 const props = defineProps({
   collapsed: {
@@ -13,7 +12,6 @@ const props = defineProps({
 
 const router = useRouter();
 const activeIndex = ref('workflow-list');
-const themeMode = ref(getThemeMode());
 
 function handleOpen() {}
 function handleClose() {}
@@ -23,12 +21,7 @@ function handleSelect(val) {
   router.push({ name: val });
 }
 
-// 切换主题
-const switchTheme = () => {
-  const newMode = toggleThemeMode();
-  themeMode.value = newMode;
-  ElMessage.success(`已切换到${newMode === 'dark' ? '暗黑' : '明亮'}模式`);
-};
+
 
 const menuItems = [
   {
@@ -212,19 +205,7 @@ const logoStyle = computed(() => {
     </div>
     
     <!-- Bottom Actions -->
-    <div class="flex-none border-t border-[var(--el-border-color)] p-2">
-      <el-tooltip :content="collapsed ? '切换主题' : ''" placement="right">
-        <el-button :link="true" class="w-full justify-center" @click="switchTheme">
-          <el-icon>
-            <el-icon-moon v-if="themeMode === 'light'" />
-            <el-icon-sunny v-else />
-          </el-icon>
-          <span v-if="!collapsed" class="ml-2">
-            {{ themeMode === 'light' ? '切换到暗黑模式' : '切换到明亮模式' }}
-          </span>
-        </el-button>
-      </el-tooltip>
-    </div>
+    <!-- 主题切换功能已禁用 -->
   </div>
 </template>
 
