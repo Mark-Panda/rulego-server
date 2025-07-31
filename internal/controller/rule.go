@@ -421,13 +421,13 @@ func (c *rule) UpdateComponentUseRule(url string) endpointApi.Router {
 
 type ComponentUseRule struct {
 	Id            string     `json:"id"`
-	ComponentName string     `json:"component_name"`
-	ComponentType string     `json:"component_type"`
+	ComponentName string     `json:"componentName"`
+	ComponentType string     `json:"componentType"`
 	Disabled      bool       `json:"disabled"`
-	UseDesc       string     `json:"use_desc"`
-	UseRuleDesc   string     `json:"use_rule_desc"`
-	CreatedAt     *time.Time `json:"created_at"`
-	UpdatedAt     *time.Time `json:"updated_at"`
+	UseDesc       string     `json:"useDesc"`
+	UseRuleDesc   string     `json:"useRuleDesc"`
+	CreatedAt     *time.Time `json:"createdAt"`
+	UpdatedAt     *time.Time `json:"updatedAt"`
 }
 
 // 删除组件使用规则
@@ -470,7 +470,7 @@ func (c *rule) FindComponentUseRule(url string) endpointApi.Router {
 func (c *rule) FindComponentUseRuleList(url string) endpointApi.Router {
 	return endpoint.NewRouter().From(url).Process(AuthProcess).Process(func(router endpointApi.Router, exchange *endpointApi.Exchange) bool {
 		msg := exchange.In.GetMsg()
-		component_type := msg.Metadata.GetValue("component_type")
+		componentType := msg.Metadata.GetValue("componentType")
 		disabledStr := msg.Metadata.GetValue("disabled")
 		keywords := msg.Metadata.GetValue("keywords")
 		var current = 1
@@ -483,25 +483,30 @@ func (c *rule) FindComponentUseRuleList(url string) endpointApi.Router {
 		if i, err := strconv.Atoi(pageSizeStr); err == nil {
 			pageSize = i
 		}
-		disabled := false
+		var disabled *bool
 		if disabledStr == "true" {
-			disabled = true
+			disabled = new(bool)
+			*disabled = true
 		}
-		componentUseRuleList, total, err := service.EventServiceImpl.FindComponentUseRuleByPage(current, pageSize, component_type, &disabled, keywords)
+		if disabledStr == "false" {
+			disabled = new(bool)
+			*disabled = false
+		}
+		componentUseRuleList, total, err := service.EventServiceImpl.FindComponentUseRuleByPage(current, pageSize, componentType, disabled, keywords)
 		if err != nil {
 			exchange.Out.SetStatusCode(http.StatusConflict)
 			exchange.Out.SetBody([]byte("查询失败" + err.Error()))
 			return false
 		}
-		componentUseRuleListJson, err := json.Marshal(componentUseRuleList)
-		if err != nil {
-			exchange.Out.SetStatusCode(http.StatusConflict)
-			exchange.Out.SetBody([]byte("查询失败" + err.Error()))
-			return false
-		}
+		// componentUseRuleListJson, err := json.Marshal(componentUseRuleList)
+		// if err != nil {
+		// 	exchange.Out.SetStatusCode(http.StatusConflict)
+		// 	exchange.Out.SetBody([]byte("查询失败" + err.Error()))
+		// 	return false
+		// }
 		result := map[string]interface{}{
 			"total": total,
-			"list":  componentUseRuleListJson,
+			"list":  componentUseRuleList,
 		}
 		resultJson, err := json.Marshal(result)
 		if err != nil {

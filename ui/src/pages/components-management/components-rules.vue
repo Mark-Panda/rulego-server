@@ -3,30 +3,35 @@ import { ref, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { QuillEditor } from '@vueup/vue-quill';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
+import * as Api from '@src/api';
 
 const tableData = ref([]);
 const loading = ref(false);
 const searchForm = ref({
-  name: '',
-  type: '',
-  status: ''
+  keywords: '',
+  componentType: '',
+  disabled: ''
 });
 
 const paginationState = ref({
   page: 1,
   size: 10,
+  pageSizes: [10, 20, 30, 40, 50],
   total: 0
 });
 
-// 新增规则表单相关
+// 新增/编辑/查看规则表单相关
 const dialogVisible = ref(false);
 const formRef = ref();
+const isEditing = ref(false); // 是否为编辑模式
+const isViewing = ref(false); // 是否为查看模式
+const editingId = ref(null); // 编辑的规则ID
 const ruleForm = ref({
-  name: '',
-  description: '',
-  usageRules: '',
-  type: '',
-  status: 'active'
+  componentName: '',
+  componentType: '',
+  disabled: false,
+  useDesc: '',
+  useRuleDesc: ''
 });
 
 // 富文本编辑器内容
@@ -50,18 +55,15 @@ const editorOptions = {
 
 // 表单验证规则
 const formRules = {
-  name: [
+  componentName: [
     { required: true, message: '请输入组件名称', trigger: 'blur' },
     { min: 2, max: 50, message: '组件名称长度在 2 到 50 个字符', trigger: 'blur' }
   ],
-  description: [
-    { required: true, message: '请输入组件描述', trigger: 'blur' }
-  ],
-  type: [
+  componentType: [
     { required: true, message: '请选择组件类型', trigger: 'change' }
   ],
-  status: [
-    { required: true, message: '请选择组件状态', trigger: 'change' }
+  useDesc: [
+    { required: true, message: '请输入使用描述', trigger: 'blur' }
   ]
 };
 
@@ -96,6 +98,26 @@ const mockData = [
   }
 ];
 
+// 组件类型选项（从已安装组件获取）
+const componentTypeOptions = ref([
+  { label: '全部类型', value: '' },
+  { label: '接入端', value: 'endpoint' },
+  { label: '过滤器', value: 'filter' },
+  { label: '转换器', value: 'transform' },
+  { label: '动作', value: 'action' }
+]);
+
+// 已安装组件列表
+const installedComponents = ref([]);
+// 组件名称选项
+const componentNameOptions = ref([]);
+
+const disabledOptions = [
+  { label: '全部状态', value: '' },
+  { label: '启用', value: false },
+  { label: '禁用', value: true }
+];
+
 const typeOptions = [
   { label: '全部', value: '' },
   { label: '接入端', value: 'endpoint' },
@@ -110,40 +132,135 @@ const statusOptions = [
   { label: '禁用', value: 'inactive' }
 ];
 
+// 获取已安装组件列表
+const fetchInstalledComponents = async () => {
+  try {
+    const res = await Api.getInstalledComponents();
+    console.log('已安装组件API返回数据:', res);
+    
+    const processedData = [];
+    const typeSet = new Set();
+    
+    // 处理endpoints数据（输入端组件）
+    if (res && res.endpoints && Array.isArray(res.endpoints)) {
+      res.endpoints.forEach(item => {
+        const component = {
+          name: item.name || item.type,
+          type: 'endpoint',
+          category: 'endpoint',
+          description: item.desc || '输入端组件',
+          _original: item
+        };
+        processedData.push(component);
+        typeSet.add('endpoint');
+      });
+    }
+    
+    // 处理nodes数据（过滤器、转换器、动作等）
+    if (res && res.nodes && Array.isArray(res.nodes)) {
+      res.nodes.forEach(item => {
+        let category = item.category;
+        if (category && category.startsWith('external/')) {
+          category = 'external';
+        }
+        
+        const component = {
+          name: item.type || item.name,
+          type: category,
+          category: category,
+          description: item.desc || '-',
+          _original: item
+        };
+        processedData.push(component);
+        typeSet.add(category);
+      });
+    }
+    
+    installedComponents.value = processedData;
+    
+    // 更新组件名称选项
+    componentNameOptions.value = processedData.map(item => ({
+      label: item.name,
+      value: item.name,
+      type: item.type
+    }));
+    
+    // 更新组件类型选项
+    const typeOptionsMap = {
+      'endpoint': '输入端',
+      'filter': '过滤器', 
+      'transform': '转换器',
+      'action': '动作',
+      'external': '外部组件',
+      'flow': '子规则链'
+    };
+    
+    const newTypeOptions = [{ label: '全部类型', value: '' }];
+    typeSet.forEach(type => {
+      if (type && typeOptionsMap[type]) {
+        newTypeOptions.push({
+          label: typeOptionsMap[type],
+          value: type
+        });
+      }
+    });
+    componentTypeOptions.value = newTypeOptions;
+    
+  } catch (error) {
+    console.error('获取已安装组件列表失败:', error);
+    ElMessage.error('获取已安装组件列表失败');
+  }
+};
+
 // 获取组件规则列表
 const fetchRulesList = async () => {
   loading.value = true;
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const params = {
+      page: paginationState.value.page,
+      size: paginationState.value.size,
+      keywords: searchForm.value.keywords || undefined,
+      componentType: searchForm.value.componentType || undefined,
+      disabled: searchForm.value.disabled !== '' ? searchForm.value.disabled : undefined
+    };
     
-    let filteredData = [...mockData];
+    // 调用API获取组件使用规则分页列表
+    const res = await Api.getComponentUseRulePage(params);
+    console.log('组件使用规则API返回数据:', res);
     
-    // 应用搜索过滤
-    if (searchForm.value.name) {
-      filteredData = filteredData.filter(item => 
-        item.name.toLowerCase().includes(searchForm.value.name.toLowerCase())
-      );
+    // 处理API返回的数据结构
+    if (res && res.list && Array.isArray(res.list)) {
+      // 处理数据，转换为表格需要的格式
+      tableData.value = res.list.map(item => ({
+        id: item.id,
+        name: item.componentName || '未知组件',
+        type: item.componentType || '',
+        description: item.useDesc || '暂无描述',
+        status: item.disabled ? 'inactive' : 'active',
+        createTime: item.createdAt ? new Date(item.createdAt).toLocaleString('zh-CN') : '-',
+        updateTime: item.updatedAt ? new Date(item.updatedAt).toLocaleString('zh-CN') : '-',
+        usageRules: item.useRuleDesc || '',
+        _original: item // 保存原始数据
+      }));
+      
+      paginationState.value.total = res.total || 0;
+    } else {
+      // 处理空数据或异常数据结构
+      tableData.value = [];
+      paginationState.value.total = 0;
+      if (!res || res.list === null) {
+        console.log('组件使用规则暂无数据');
+      } else {
+        console.warn('无法解析的数据结构:', res);
+      }
     }
     
-    if (searchForm.value.type) {
-      filteredData = filteredData.filter(item => item.type === searchForm.value.type);
-    }
-    
-    if (searchForm.value.status) {
-      filteredData = filteredData.filter(item => item.status === searchForm.value.status);
-    }
-    
-    // 分页处理
-    const start = (paginationState.value.page - 1) * paginationState.value.size;
-    const end = start + paginationState.value.size;
-    
-    tableData.value = filteredData.slice(start, end);
-    paginationState.value.total = filteredData.length;
-    
+    console.log('处理后的表格数据:', tableData.value);
   } catch (error) {
-    console.error('获取组件规则列表失败:', error);
-    ElMessage.error('获取组件规则列表失败');
+    console.error('获取组件使用规则列表失败:', error);
+    ElMessage.error('获取组件使用规则列表失败');
+    tableData.value = [];
+    paginationState.value.total = 0;
   } finally {
     loading.value = false;
   }
@@ -158,9 +275,9 @@ const handleSearch = () => {
 // 重置搜索
 const handleReset = () => {
   searchForm.value = {
-    name: '',
-    type: '',
-    status: ''
+    keywords: '',
+    componentType: '',
+    disabled: ''
   };
   paginationState.value.page = 1;
   fetchRulesList();
@@ -208,7 +325,51 @@ const toggleRuleStatus = async (row) => {
 
 // 编辑规则
 const editRule = (row) => {
-  ElMessage.info('编辑功能开发中...');
+  isEditing.value = true;
+  isViewing.value = false;
+  editingId.value = row.id;
+  dialogVisible.value = true;
+  
+  // 填充表单数据
+  ruleForm.value = {
+    componentName: row.name || '',
+    componentType: row.type || '',
+    disabled: row.status === 'inactive',
+    useDesc: row.description || '',
+    useRuleDesc: row.usageRules || ''
+  };
+  
+  // 设置富文本编辑器内容
+  editorContent.value = row.usageRules || '';
+  // 恢复默认placeholder
+  editorOptions.placeholder = '请输入组件使用规则...';
+};
+
+// 查看规则
+const viewRule = (row) => {
+  isEditing.value = false;
+  isViewing.value = true;
+  editingId.value = row.id;
+  dialogVisible.value = true;
+  
+  // 填充表单数据
+  ruleForm.value = {
+    componentName: row.name || '',
+    componentType: row.type || '',
+    disabled: row.status === 'inactive',
+    useDesc: row.description || '',
+    useRuleDesc: row.usageRules || ''
+  };
+  
+  // 设置富文本编辑器内容
+  editorContent.value = row.usageRules || '';
+  
+  // 如果有内容，清除placeholder
+  if (row.usageRules && row.usageRules.trim()) {
+    editorOptions.placeholder = '';
+  } else {
+    editorOptions.placeholder = '请输入组件使用规则...';
+  }
 };
 
 // 删除规则
@@ -224,9 +385,10 @@ const deleteRule = async (row) => {
       }
     );
     
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // 调用删除API
+    await Api.deleteComponentUseRule({ id: row.id });
     
+    // 删除成功后从表格中移除该行
     const index = tableData.value.findIndex(item => item.id === row.id);
     if (index > -1) {
       tableData.value.splice(index, 1);
@@ -236,6 +398,7 @@ const deleteRule = async (row) => {
     ElMessage.success('删除成功');
   } catch (error) {
     if (error !== 'cancel') {
+      console.error('删除规则失败:', error);
       ElMessage.error('删除失败');
     }
   }
@@ -243,38 +406,57 @@ const deleteRule = async (row) => {
 
 // 新增规则
 const addRule = () => {
+  isEditing.value = false;
+  isViewing.value = false;
+  editingId.value = null;
   dialogVisible.value = true;
   // 重置表单
   ruleForm.value = {
-    name: '',
-    description: '',
-    usageRules: '',
-    type: '',
-    status: 'enabled'
+    componentName: '',
+    componentType: '',
+    disabled: false,
+    useDesc: '',
+    useRuleDesc: ''
   };
   // 重置富文本编辑器内容
   editorContent.value = '';
+  // 恢复默认placeholder
+  editorOptions.placeholder = '请输入组件使用规则...';
 };
 
 // 富文本编辑器内容变化处理
 const onEditorChange = (content) => {
-  ruleForm.value.usageRules = content;
+  ruleForm.value.useRuleDesc = content;
+};
+
+// 组件名称变化处理
+const onComponentNameChange = (componentName) => {
+  // 根据选择的组件名称自动设置组件类型
+  const selectedComponent = componentNameOptions.value.find(option => option.value === componentName);
+  if (selectedComponent) {
+    ruleForm.value.componentType = selectedComponent.type;
+  }
 };
 
 // 关闭弹窗
 const closeDialog = () => {
   dialogVisible.value = false;
+  isEditing.value = false;
+  isViewing.value = false;
+  editingId.value = null;
   if (formRef.value) {
     formRef.value.resetFields();
   }
   ruleForm.value = {
-    name: '',
-    description: '',
-    usageRules: '',
-    type: '',
-    status: 'active'
+    componentName: '',
+    componentType: '',
+    disabled: false,
+    useDesc: '',
+    useRuleDesc: ''
   };
   editorContent.value = '';
+  // 恢复默认placeholder
+  editorOptions.placeholder = '请输入组件使用规则...';
 };
 
 // 提交表单
@@ -284,30 +466,41 @@ const submitForm = async () => {
   try {
     await formRef.value.validate();
     
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // 创建新规则对象
-    const newRule = {
-      id: Date.now(),
-      name: ruleForm.value.name,
-      description: ruleForm.value.description,
-      usageRules: ruleForm.value.usageRules,
-      type: ruleForm.value.type,
-      status: ruleForm.value.status,
-      createTime: new Date().toLocaleString('zh-CN'),
-      updateTime: new Date().toLocaleString('zh-CN')
+    // 准备提交数据
+    const submitData = {
+      componentName: ruleForm.value.componentName,
+      componentType: ruleForm.value.componentType,
+      disabled: ruleForm.value.disabled,
+      useDesc: ruleForm.value.useDesc,
+      useRuleDesc: ruleForm.value.useRuleDesc
     };
     
-    // 添加到列表开头
-    tableData.value.unshift(newRule);
-    paginationState.value.total++;
+    console.log('提交数据:', submitData);
     
-    ElMessage.success('新增规则成功');
+    if (isEditing.value) {
+      // 编辑模式：添加ID并调用更新接口
+      submitData.id = String(editingId.value);
+      await Api.updateComponentUseRule(submitData);
+      ElMessage.success('规则更新成功');
+    } else {
+      // 新增模式：调用创建接口
+      await Api.createComponentUseRule(submitData);
+      ElMessage.success('新增规则成功');
+    }
+    
     closeDialog();
     
+    // 刷新列表
+    await fetchRulesList();
+    
   } catch (error) {
-    console.error('表单验证失败:', error);
+    const action = isEditing.value ? '更新' : '创建';
+    console.error(`${action}组件使用规则失败:`, error);
+    if (error.response && error.response.data && error.response.data.message) {
+      ElMessage.error(`${action}失败: ${error.response.data.message}`);
+    } else {
+      ElMessage.error(`${action}规则失败，请稍后重试`);
+    }
   }
 };
 
@@ -332,7 +525,8 @@ const getTypeText = (type) => {
   return typeMap[type] || type;
 };
 // 页面初始化
-onMounted(() => {
+onMounted(async () => {
+  await fetchInstalledComponents();
   fetchRulesList();
 });
 </script>
@@ -350,8 +544,8 @@ onMounted(() => {
       <div class="flex justify-between items-center">
         <div class="flex items-center space-x-4">
           <el-input
-            v-model="searchForm.name"
-            placeholder="搜索规则名称"
+            v-model="searchForm.keywords"
+            placeholder="搜索关键词"
             style="width: 220px;"
             clearable
             @keyup.enter="handleSearch"
@@ -362,13 +556,13 @@ onMounted(() => {
           </el-input>
           
           <el-select 
-            v-model="searchForm.type" 
-            placeholder="规则类型" 
+            v-model="searchForm.componentType" 
+            placeholder="组件类型" 
             style="width: 150px;"
             clearable
           >
             <el-option
-              v-for="option in typeOptions"
+              v-for="option in componentTypeOptions"
               :key="option.value"
               :label="option.label"
               :value="option.value"
@@ -376,13 +570,13 @@ onMounted(() => {
           </el-select>
           
           <el-select 
-            v-model="searchForm.status" 
+            v-model="searchForm.disabled" 
             placeholder="状态" 
             style="width: 120px;"
             clearable
           >
             <el-option
-              v-for="option in statusOptions"
+              v-for="option in disabledOptions"
               :key="option.value"
               :label="option.label"
               :value="option.value"
@@ -446,6 +640,15 @@ onMounted(() => {
           <template #default="{ row }">
             <div class="flex space-x-2">
               <el-button 
+                type="info" 
+                size="small" 
+                link
+                @click="viewRule(row)"
+              >
+                查看
+              </el-button>
+              
+              <el-button 
                 type="primary" 
                 size="small" 
                 link
@@ -481,19 +684,20 @@ onMounted(() => {
         <el-pagination
           v-model:current-page="paginationState.page"
           v-model:page-size="paginationState.size"
-          :page-sizes="[10, 20, 50, 100]"
+          :page-sizes="paginationState.pageSizes"
           :total="paginationState.total"
           layout="total, sizes, prev, pager, next, jumper"
+          :background="true"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
       </div>
     </div>
     
-    <!-- 新增规则弹窗 -->
+    <!-- 新增/编辑/查看规则弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      title="新增组件规则"
+      :title="isViewing ? '查看组件规则' : (isEditing ? '编辑组件规则' : '新增组件规则')"
       width="800px"
       top="8vh"
       :before-close="closeDialog"
@@ -505,69 +709,93 @@ onMounted(() => {
         label-width="120px"
         label-position="left"
       >
-        <el-form-item label="组件名称" prop="name">
-          <el-input
-            v-model="ruleForm.name"
-            placeholder="请输入组件名称"
-            clearable
-          />
+        <el-form-item label="组件名称" prop="componentName">
+          <el-select
+            v-model="ruleForm.componentName"
+            placeholder="请选择组件名称"
+            style="width: 100%"
+            :disabled="isEditing || isViewing"
+            filterable
+            @change="onComponentNameChange"
+          >
+            <el-option
+              v-for="option in componentNameOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
         </el-form-item>
         
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="组件类型" prop="type">
+            <el-form-item label="组件类型" prop="componentType">
               <el-select
-                v-model="ruleForm.type"
+                v-model="ruleForm.componentType"
                 placeholder="请选择组件类型"
                 style="width: 100%"
+                :disabled="isViewing"
               >
-                <el-option label="接入端" value="endpoint" />
-                <el-option label="过滤器" value="filter" />
-                <el-option label="转换器" value="transform" />
-                <el-option label="动作" value="action" />
+                <el-option
+                  v-for="option in componentTypeOptions.filter(opt => opt.value !== '')"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="组件状态" prop="status">
+            <el-form-item label="组件状态" prop="disabled">
               <el-switch
-                v-model="ruleForm.status"
-                active-text="启用"
-                inactive-text="禁用"
-                active-value="active"
-                inactive-value="inactive"
-                style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
+                v-model="ruleForm.disabled"
+                active-text="禁用"
+                inactive-text="启用"
+                :active-value="true"
+                :inactive-value="false"
+                :disabled="isViewing"
+                style="--el-switch-on-color: #ff4949; --el-switch-off-color: #13ce66"
               />
             </el-form-item>
           </el-col>
         </el-row>
         
-        <el-form-item label="组件描述" prop="description">
-          <el-input 
-            v-model="ruleForm.description" 
-            type="textarea" 
+        <el-form-item label="使用描述" prop="useDesc">
+          <el-input
+            v-model="ruleForm.useDesc"
+            type="textarea"
             :rows="3"
-            placeholder="请输入组件描述" 
+            placeholder="请输入使用描述"
+            :readonly="isViewing"
           />
         </el-form-item>
         
-        <el-form-item label="组件使用规则" prop="usageRules">
+        <el-form-item label="使用规则描述" prop="useRuleDesc">
           <div class="quill-editor-wrapper">
             <QuillEditor
               v-model:content="editorContent"
               :options="editorOptions"
               @update:content="onEditorChange"
               content-type="html"
+              :read-only="isViewing"
             />
           </div>
         </el-form-item>
       </el-form>
       
       <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="closeDialog">取消</el-button>
-          <el-button type="primary" @click="submitForm">提交</el-button>
-        </div>
+        <span class="dialog-footer">
+          <el-button @click="closeDialog">
+            {{ isViewing ? '关闭' : '取消' }}
+          </el-button>
+          <el-button 
+            v-if="!isViewing"
+            type="primary" 
+            @click="submitForm"
+          >
+            {{ isEditing ? '更新' : '确定' }}
+          </el-button>
+        </span>
       </template>
     </el-dialog>
   </div>
