@@ -309,16 +309,32 @@ const toggleRuleStatus = async (row) => {
       }
     );
     
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // 准备更新数据
+    const updateData = {
+      id: String(row.id),
+      componentName: row.name,
+      componentType: row.type,
+      disabled: row.status === 'active', // 如果当前是启用状态，则设置为禁用
+      useDesc: row.description || '',
+      useRuleDesc: row.usageRules || ''
+    };
     
+    // 调用与编辑相同的更新接口
+    await Api.updateComponentUseRule(updateData);
+    
+    // 更新本地数据
     row.status = row.status === 'active' ? 'inactive' : 'active';
     row.updateTime = new Date().toLocaleString('zh-CN');
     
     ElMessage.success(`${action}成功`);
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('操作失败');
+      console.error('切换状态失败:', error);
+      if (error.response && error.response.data && error.response.data.message) {
+        ElMessage.error(`操作失败: ${error.response.data.message}`);
+      } else {
+        ElMessage.error('操作失败，请稍后重试');
+      }
     }
   }
 };
