@@ -7,13 +7,13 @@ import (
 )
 
 // 创建组件使用规则
-func CreateComponentUseRule(r model.ComponentUseRule) error {
+func (s *EventDao) CreateComponentUseRule(r model.ComponentUseRule) error {
 	err := model.DBClient.Client.Create(&r).Error
 	return err
 }
 
 // 分页查询组件使用规则
-func FindComponentUseRuleByPage(page, size int, component_type string, disabled *bool, keywords string) ([]model.ComponentUseRule, int64, error) {
+func (s *EventDao) FindComponentUseRuleByPage(page, size int, component_type string, disabled *bool, keywords string) ([]model.ComponentUseRule, int64, error) {
 	var re []model.ComponentUseRule
 	where := ""
 	if disabled != nil {
@@ -44,12 +44,19 @@ func FindComponentUseRuleByPage(page, size int, component_type string, disabled 
 }
 
 // 物理删除组件使用规则
-func DeleteComponentUseRuleByIdPhysical(id string) error {
+func (s *EventDao) DeleteComponentUseRuleByIdPhysical(id string) error {
 	err := model.DBClient.Client.Model(&model.ComponentUseRule{}).Where("id = ?", id).Unscoped().Delete(&model.ComponentUseRule{}).Error
 	return err
 }
 
 // 根据ID更新组件使用规则
-func UpdateComponentUseRuleById(id string, data map[string]interface{}) error {
+func (s *EventDao) UpdateComponentUseRuleById(id string, data map[string]interface{}) error {
 	return model.DBClient.Client.Model(&model.ComponentUseRule{}).Where("id = ?", id).Updates(data).Error
+}
+
+// 根据ID查询组件使用规则
+func (s *EventDao) FindComponentUseRuleById(id string) (model.ComponentUseRule, error) {
+	var r model.ComponentUseRule
+	err := model.DBClient.Client.Model(&model.ComponentUseRule{}).Where("id = ?", id).Take(&r).Error
+	return r, err
 }

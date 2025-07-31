@@ -16,6 +16,8 @@ CREATE TABLE "public"."component_use_rule" (
 
 COMMENT ON TABLE "public"."component_use_rule" IS '组件使用规则配置表';
 
+CREATE UNIQUE INDEX component_use_rule_component_name_unique_idx ON component_use_rule(component_name);
+
 
 COMMENT ON COLUMN "public"."component_use_rule"."id" IS '主键ID';
 COMMENT ON COLUMN "public"."component_use_rule"."component_name" IS '组件名称';

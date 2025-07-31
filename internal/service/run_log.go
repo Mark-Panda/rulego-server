@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/rulego/rulego-server/config"
 	"github.com/rulego/rulego-server/internal/dao"
+	"github.com/rulego/rulego-server/internal/model"
 	"github.com/rulego/rulego/api/types"
 )
 
@@ -47,4 +48,29 @@ func (s *EventService) List(username, chainId string, current, size int, startTi
 func (s *EventService) Get(username, chainId, snapshotId string) (types.RuleChainRunSnapshot, error) {
 	//return s.EventDao.Get(username, chainId, snapshotId)
 	return s.EventDao.GetByDataBase(username, chainId, snapshotId)
+}
+
+// CreateComponentUseRule 创建组件使用规则
+func (s *EventService) CreateComponentUseRule(r model.ComponentUseRule) error {
+	return s.EventDao.CreateComponentUseRule(r)
+}
+
+// FindComponentUseRuleByPage 分页查询组件使用规则
+func (s *EventService) FindComponentUseRuleByPage(page, size int, component_type string, disabled *bool, keywords string) ([]model.ComponentUseRule, int64, error) {
+	return s.EventDao.FindComponentUseRuleByPage(page, size, component_type, disabled, keywords)
+}
+
+// DeleteComponentUseRuleById 删除组件使用规则
+func (s *EventService) DeleteComponentUseRuleById(id string) error {
+	return s.EventDao.DeleteComponentUseRuleByIdPhysical(id)
+}
+
+// UpdateComponentUseRuleById 根据ID更新组件使用规则
+func (s *EventService) UpdateComponentUseRuleById(id string, data map[string]interface{}) error {
+	return s.EventDao.UpdateComponentUseRuleById(id, data)
+}
+
+// FindComponentUseRuleById 根据ID查询组件使用规则
+func (s *EventService) FindComponentUseRuleById(id string) (model.ComponentUseRule, error) {
+	return s.EventDao.FindComponentUseRuleById(id)
 }

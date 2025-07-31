@@ -16,6 +16,7 @@ require (
 	github.com/rulego/rulego-components-etl v0.29.1-0.20250602160310-2d30a072f03b
 	github.com/rulego/rulego-components-iot v0.32.0
 	github.com/silenceper/log v0.0.0-20171204144354-e5ac7fa8a76a
+	github.com/spf13/cast v1.9.2
 	go.uber.org/zap v1.27.0
 	gopkg.in/ini.v1 v1.67.0
 	gorm.io/driver/postgres v1.6.0

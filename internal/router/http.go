@@ -142,6 +142,9 @@ func NewRestServe(config config.Config) (endpointApi.HttpEndpoint, error) {
 	//创建用户登录路由
 	restEndpoint.POST(controller.Base.Login(apiBasePath + "/login"))
 
+	// 创建组件使用路由
+	restEndpoint.POST(controller.Rule.CreateComponentUseRule(apiBasePath + "/componentUseRule/create"))
+
 	if config.MCP.Enable {
 		restEndpoint.GET(controller.MCP.Handler(apiBasePath + "/mcp/:apiKey/sse"))
 		restEndpoint.POST(controller.MCP.Handler(apiBasePath + "/mcp/:apiKey/message"))

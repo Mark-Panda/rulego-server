@@ -17,6 +17,9 @@
 package service
 
 import (
+	"path"
+	"path/filepath"
+
 	"github.com/rulego/rulego-server/config"
 	"github.com/rulego/rulego-server/internal/constants"
 	"github.com/rulego/rulego-server/internal/dao"
@@ -24,8 +27,6 @@ import (
 	"github.com/rulego/rulego/engine"
 	"github.com/rulego/rulego/utils/fs"
 	"github.com/rulego/rulego/utils/json"
-	"path"
-	"path/filepath"
 )
 
 // ComponentService 自定义组件服务

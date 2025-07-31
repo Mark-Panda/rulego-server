@@ -1,18 +1,21 @@
 package controller
 
 import (
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/rulego/rulego-server/config"
 	"github.com/rulego/rulego-server/config/logger"
 	"github.com/rulego/rulego-server/internal/constants"
+	"github.com/rulego/rulego-server/internal/model"
 	"github.com/rulego/rulego-server/internal/service"
 	"github.com/rulego/rulego/api/types"
 	endpointApi "github.com/rulego/rulego/api/types/endpoint"
 	"github.com/rulego/rulego/endpoint"
 	"github.com/rulego/rulego/utils/json"
 	"github.com/rulego/rulego/utils/str"
-	"net/http"
-	"strconv"
-	"strings"
 )
 
 var Rule = &rule{}
@@ -344,6 +347,34 @@ func (c *rule) Operate(url string) endpointApi.Router {
 
 		} else {
 			return userNotFound(username, exchange)
+		}
+		return true
+	}).End()
+}
+
+// 创建组件使用规则
+func (c *rule) CreateComponentUseRule(url string) endpointApi.Router {
+	return endpoint.NewRouter().From(url).Process(AuthProcess).Process(func(router endpointApi.Router, exchange *endpointApi.Exchange) bool {
+		msg := exchange.In.Body()
+		var componentUseRule model.ComponentUseRule
+		err := json.Unmarshal(msg, &componentUseRule)
+		if err != nil {
+			exchange.Out.SetStatusCode(http.StatusBadRequest)
+			exchange.Out.SetBody([]byte(err.Error()))
+			return false
+		}
+		if componentUseRule.ComponentName == "" || componentUseRule.ComponentType == "" {
+			exchange.Out.SetStatusCode(http.StatusBadRequest)
+			exchange.Out.SetBody([]byte("组件名称和类型不能为空"))
+			return false
+		}
+		t := time.Now()
+		componentUseRule.CreatedAt = &t
+		componentUseRule.UpdatedAt = &t
+		err = service.EventServiceImpl.CreateComponentUseRule(componentUseRule)
+		if err != nil {
+			exchange.Out.SetStatusCode(http.StatusConflict)
+			exchange.Out.SetBody([]byte("创建失败" + err.Error()))
 		}
 		return true
 	}).End()
