@@ -83,6 +83,11 @@ const menuItems = [
             index: 'components-market',
             label: '组件市场',
             implemented: true
+          },
+          {
+            index: 'components-rules',
+            label: '组件规则',
+            implemented: true
           }
         ]
       },

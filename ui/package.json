@@ -24,6 +24,7 @@
     "@tiptap/extension-link": "^2.11.2",
     "@tiptap/extension-list-item": "^2.11.2",
     "@tiptap/extension-text-style": "^2.11.2",
+    "@tiptap/extension-underline": "^2.26.1",
     "@tiptap/starter-kit": "^2.11.2",
     "@tiptap/vue-3": "^2.11.2",
     "@vueup/vue-quill": "^1.2.0",

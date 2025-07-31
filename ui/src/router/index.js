@@ -35,6 +35,12 @@ const routes = [
         component: () =>
           import('@src/pages/components-management/components-market.vue'),
       },
+      {
+        path: '/components-rules',
+        name: 'components-rules',
+        component: () =>
+          import('@src/pages/components-management/components-rules.vue'),
+      },
     ],
   },
   {
