@@ -356,7 +356,7 @@ func (c *rule) Operate(url string) endpointApi.Router {
 func (c *rule) CreateComponentUseRule(url string) endpointApi.Router {
 	return endpoint.NewRouter().From(url).Process(AuthProcess).Process(func(router endpointApi.Router, exchange *endpointApi.Exchange) bool {
 		msg := exchange.In.Body()
-		var componentUseRule model.ComponentUseRule
+		var componentUseRule ComponentUseRule
 		err := json.Unmarshal(msg, &componentUseRule)
 		if err != nil {
 			exchange.Out.SetStatusCode(http.StatusBadRequest)
@@ -369,13 +369,147 @@ func (c *rule) CreateComponentUseRule(url string) endpointApi.Router {
 			return false
 		}
 		t := time.Now()
-		componentUseRule.CreatedAt = &t
-		componentUseRule.UpdatedAt = &t
-		err = service.EventServiceImpl.CreateComponentUseRule(componentUseRule)
+		err = service.EventServiceImpl.CreateComponentUseRule(model.ComponentUseRule{
+			ComponentName: componentUseRule.ComponentName,
+			ComponentType: componentUseRule.ComponentType,
+			Disabled:      componentUseRule.Disabled,
+			UseDesc:       componentUseRule.UseDesc,
+			UseRuleDesc:   componentUseRule.UseRuleDesc,
+			CreatedAt:     &t,
+			UpdatedAt:     &t,
+		})
 		if err != nil {
 			exchange.Out.SetStatusCode(http.StatusConflict)
 			exchange.Out.SetBody([]byte("创建失败" + err.Error()))
 		}
+		return true
+	}).End()
+}
+
+// 更新组件使用规则
+func (c *rule) UpdateComponentUseRule(url string) endpointApi.Router {
+	return endpoint.NewRouter().From(url).Process(AuthProcess).Process(func(router endpointApi.Router, exchange *endpointApi.Exchange) bool {
+		msg := exchange.In.Body()
+		var componentUseRule ComponentUseRule
+		err := json.Unmarshal(msg, &componentUseRule)
+		if err != nil {
+			exchange.Out.SetStatusCode(http.StatusBadRequest)
+			exchange.Out.SetBody([]byte(err.Error()))
+			return false
+		}
+		if componentUseRule.Id == "" {
+			exchange.Out.SetStatusCode(http.StatusBadRequest)
+			exchange.Out.SetBody([]byte("组件使用规则id不能为空"))
+			return false
+		}
+		t := time.Now()
+		err = service.EventServiceImpl.UpdateComponentUseRuleById(componentUseRule.Id, map[string]interface{}{
+			"component_name": componentUseRule.ComponentName,
+			"component_type": componentUseRule.ComponentType,
+			"disabled":       componentUseRule.Disabled,
+			"use_desc":       componentUseRule.UseDesc,
+			"use_rule_desc":  componentUseRule.UseRuleDesc,
+			"updated_at":     t,
+		})
+		if err != nil {
+			exchange.Out.SetStatusCode(http.StatusConflict)
+			exchange.Out.SetBody([]byte("更新失败" + err.Error()))
+		}
+		return true
+	}).End()
+}
+
+type ComponentUseRule struct {
+	Id            string     `json:"id"`
+	ComponentName string     `json:"component_name"`
+	ComponentType string     `json:"component_type"`
+	Disabled      bool       `json:"disabled"`
+	UseDesc       string     `json:"use_desc"`
+	UseRuleDesc   string     `json:"use_rule_desc"`
+	CreatedAt     *time.Time `json:"created_at"`
+	UpdatedAt     *time.Time `json:"updated_at"`
+}
+
+// 删除组件使用规则
+func (c *rule) DeleteComponentUseRule(url string) endpointApi.Router {
+	return endpoint.NewRouter().From(url).Process(AuthProcess).Process(func(router endpointApi.Router, exchange *endpointApi.Exchange) bool {
+		msg := exchange.In.GetMsg()
+		id := msg.Metadata.GetValue("id")
+		err := service.EventServiceImpl.DeleteComponentUseRuleById(id)
+		if err != nil {
+			exchange.Out.SetStatusCode(http.StatusConflict)
+			exchange.Out.SetBody([]byte("删除失败" + err.Error()))
+		}
+		return true
+	}).End()
+}
+
+// 查询组件使用规则
+func (c *rule) FindComponentUseRule(url string) endpointApi.Router {
+	return endpoint.NewRouter().From(url).Process(AuthProcess).Process(func(router endpointApi.Router, exchange *endpointApi.Exchange) bool {
+		msg := exchange.In.GetMsg()
+		id := msg.Metadata.GetValue("id")
+		componentUseRule, err := service.EventServiceImpl.FindComponentUseRuleById(id)
+		if err != nil {
+			exchange.Out.SetStatusCode(http.StatusConflict)
+			exchange.Out.SetBody([]byte("查询失败" + err.Error()))
+			return false
+		}
+		componentUseRuleJson, err := json.Marshal(componentUseRule)
+		if err != nil {
+			exchange.Out.SetStatusCode(http.StatusConflict)
+			exchange.Out.SetBody([]byte("查询失败" + err.Error()))
+			return false
+		}
+		exchange.Out.SetBody(componentUseRuleJson)
+		return true
+	}).End()
+}
+
+// 查询组件使用规则列表
+func (c *rule) FindComponentUseRuleList(url string) endpointApi.Router {
+	return endpoint.NewRouter().From(url).Process(AuthProcess).Process(func(router endpointApi.Router, exchange *endpointApi.Exchange) bool {
+		msg := exchange.In.GetMsg()
+		component_type := msg.Metadata.GetValue("component_type")
+		disabledStr := msg.Metadata.GetValue("disabled")
+		keywords := msg.Metadata.GetValue("keywords")
+		var current = 1
+		var pageSize = 20
+		currentStr := msg.Metadata.GetValue(constants.KeyPage)
+		if i, err := strconv.Atoi(currentStr); err == nil {
+			current = i
+		}
+		pageSizeStr := msg.Metadata.GetValue(constants.KeySize)
+		if i, err := strconv.Atoi(pageSizeStr); err == nil {
+			pageSize = i
+		}
+		disabled := false
+		if disabledStr == "true" {
+			disabled = true
+		}
+		componentUseRuleList, total, err := service.EventServiceImpl.FindComponentUseRuleByPage(current, pageSize, component_type, &disabled, keywords)
+		if err != nil {
+			exchange.Out.SetStatusCode(http.StatusConflict)
+			exchange.Out.SetBody([]byte("查询失败" + err.Error()))
+			return false
+		}
+		componentUseRuleListJson, err := json.Marshal(componentUseRuleList)
+		if err != nil {
+			exchange.Out.SetStatusCode(http.StatusConflict)
+			exchange.Out.SetBody([]byte("查询失败" + err.Error()))
+			return false
+		}
+		result := map[string]interface{}{
+			"total": total,
+			"list":  componentUseRuleListJson,
+		}
+		resultJson, err := json.Marshal(result)
+		if err != nil {
+			exchange.Out.SetStatusCode(http.StatusConflict)
+			exchange.Out.SetBody([]byte("查询失败" + err.Error()))
+			return false
+		}
+		exchange.Out.SetBody(resultJson)
 		return true
 	}).End()
 }

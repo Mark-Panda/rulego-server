@@ -144,6 +144,14 @@ func NewRestServe(config config.Config) (endpointApi.HttpEndpoint, error) {
 
 	// 创建组件使用路由
 	restEndpoint.POST(controller.Rule.CreateComponentUseRule(apiBasePath + "/componentUseRule/create"))
+	// 获取组件使用路由
+	restEndpoint.GET(controller.Rule.FindComponentUseRule(apiBasePath + "/componentUseRule/get"))
+	// 删除组件使用路由
+	restEndpoint.DELETE(controller.Rule.DeleteComponentUseRule(apiBasePath + "/componentUseRule/delete"))
+	// 更新组件使用路由
+	restEndpoint.POST(controller.Rule.UpdateComponentUseRule(apiBasePath + "/componentUseRule/update"))
+	// 分页查询组件使用路由
+	restEndpoint.GET(controller.Rule.FindComponentUseRuleList(apiBasePath + "/componentUseRule/page"))
 
 	if config.MCP.Enable {
 		restEndpoint.GET(controller.MCP.Handler(apiBasePath + "/mcp/:apiKey/sse"))
