@@ -31,11 +31,11 @@ func NewComponentDao(config config.Config, username string) (*ComponentDao, erro
 	return dao, nil
 }
 func (d *ComponentDao) List(username string, keywords string, root *bool, disabled *bool, size, page int) ([]types.RuleChain, int, error) {
-	return d.ruleDao.ListToDataBase(username, keywords, root, disabled, size, page)
+	return d.ruleDao.ListToComponentRegulation(username, keywords, root, disabled, size, page)
 }
 
 func (d *ComponentDao) Get(username, chainId string) ([]byte, error) {
-	return d.ruleDao.FindDataBaseByRuleChainId(chainId)
+	return d.ruleDao.FindComponentRegulationByRuleChainId(chainId)
 }
 
 func (d *ComponentDao) GetAsRuleChain(username, chainId string) (types.RuleChain, error) {
@@ -57,17 +57,12 @@ func (d *ComponentDao) Save(username, chainId string, def []byte) error {
 	if err := json.Unmarshal(def, &ruleChain); err != nil {
 		return err
 	}
-	if err := d.ruleDao.SaveToDataBase(username, chainId, def); err != nil {
+	if err := d.ruleDao.SaveToComponentRegulation(username, chainId, def); err != nil {
 		return err
 	}
 	return nil
 }
 
-// 从数据库删除规则链
-func (d *ComponentDao) DeleteToDataBase(username, chainId string) error {
-	return DeleteRegulationByRuleChainId(chainId)
-}
-
 func (d *ComponentDao) Delete(username, chainId string) error {
-	return d.ruleDao.DeleteToDataBase(username, chainId)
+	return d.ruleDao.DeleteToComponentRegulation(username, chainId)
 }

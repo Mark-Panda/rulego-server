@@ -1,21 +1,13 @@
 package dao
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
-	"os"
-	"path"
-	"path/filepath"
-	"sort"
-	"strings"
 	"sync"
 
+	"github.com/dromara/carbon/v2"
 	"github.com/rulego/rulego-server/config"
-	"github.com/rulego/rulego-server/internal/constants"
+	"github.com/rulego/rulego-server/internal/model"
 	"github.com/rulego/rulego/api/types"
-	"github.com/rulego/rulego/utils/fs"
-	"github.com/rulego/rulego/utils/str"
+	"github.com/rulego/rulego/utils/json"
 )
 
 // IndexKeySpe key 连接符
@@ -42,239 +34,97 @@ type RuleMeta struct {
 	UpdateTime string `json:"updateTime"`
 }
 
-func NewRuleDao(config config.Config, username string) (*RuleDao, error) {
-	dao := &RuleDao{
-		config:   config,
-		username: username,
-		index:    Index{Rules: make(map[string]RuleMeta)},
-	}
-
-	// Load or initialize the index
-	indexPath := dao.getIndexPath()
-	if _, err := os.Stat(indexPath); errors.Is(err, os.ErrNotExist) {
-		return dao, dao.rebuildIndex()
-	} else if err != nil {
-		return nil, err
-	} else {
-		if err := dao.loadIndex(indexPath); err != nil {
-			return nil, err
-		}
-	}
-
-	return dao, nil
-}
-func (d *RuleDao) List(username string, keywords string, root *bool, disabled *bool, size, page int) ([]types.RuleChain, int, error) {
-	var ruleChains []types.RuleChain
-	totalCount := 0
-	indexList := d.getAllIndex()
-	// 遍历索引中的元数据
-	for _, meta := range indexList {
-		if (root == nil || meta.Root == *root) &&
-			(disabled == nil || meta.Disabled == *disabled) {
-			if keywords == "" || strings.Contains(meta.Name, keywords) ||
-				strings.Contains(meta.ID, keywords) {
-				// 根据元数据加载完整的规则链数据
-				ruleChainData, err := d.GetAsRuleChain(username, meta.ID)
-				if err != nil {
-					continue
-				}
-				ruleChains = append(ruleChains, ruleChainData)
-				totalCount++
-			}
-		}
-	}
-
-	// 排序逻辑
-	sort.Slice(ruleChains, func(i, j int) bool {
-		var iTime, jTime string
-		if v, ok := ruleChains[i].RuleChain.GetAdditionalInfo(constants.KeyUpdateTime); ok {
-			iTime = str.ToString(v)
-		}
-		if v, ok := ruleChains[j].RuleChain.GetAdditionalInfo(constants.KeyUpdateTime); ok {
-			jTime = str.ToString(v)
-		}
-		return iTime > jTime
-	})
-
-	if page == 0 {
-		return ruleChains, totalCount, nil
-	}
-
-	start := (page - 1) * size
-	end := start + size
-	if start > totalCount {
-		start = totalCount
-	}
-	if end > totalCount {
-		end = totalCount
-	}
-
-	return ruleChains[start:end], totalCount, nil
-}
-
-func (d *RuleDao) Get(username, chainId string) ([]byte, error) {
-	var paths = []string{d.config.DataDir, constants.DirWorkflows}
-	paths = append(paths, username, constants.DirWorkflowsRule, chainId+constants.RuleChainFileSuffix)
-	pathStr := path.Join(paths...)
-	return os.ReadFile(pathStr)
-}
-
-func (d *RuleDao) GetAsRuleChain(username, chainId string) (types.RuleChain, error) {
-	// 根据ID加载规则链DSL数据
-	var ruleChain types.RuleChain
-	data, err := d.Get(username, chainId)
-	if err != nil {
-		return ruleChain, err
-	}
-	if err := json.Unmarshal(data, &ruleChain); err != nil {
-		return ruleChain, err
-	}
-
-	return ruleChain, nil
-}
-
-func (d *RuleDao) Save(username, chainId string, def []byte) error {
+// 保存或更新到数据库
+func (d *RuleDao) SaveToComponentRegulation(username, chainId string, def []byte) error {
+	v, _ := json.Format(def)
+	// def 转成 types.RuleChain
 	var ruleChain types.RuleChain
 	if err := json.Unmarshal(def, &ruleChain); err != nil {
 		return err
 	}
-	if err := d.saveRuleChain(username, chainId, def); err != nil {
-		return err
+	t := carbon.Now(carbon.Shanghai).StdTime()
+	ruleConfigInfo, gErr := FindComponentRegulationByRuleChainId(chainId)
+	if gErr != nil {
+		return gErr
 	}
-	//创建索引
-	d.createIndex(ruleChain)
-	// 保存索引到文件
-	return d.saveIndex(d.getIndexPath())
+	if ruleConfigInfo != nil && ruleConfigInfo.RuleChainId != "" {
+		updateData := map[string]interface{}{
+			"rule_config": string(v),
+			"root":        ruleChain.RuleChain.Root,
+			"disabled":    ruleChain.RuleChain.Disabled,
+			"name":        ruleChain.RuleChain.Name,
+			"updated_at":  &t,
+		}
+
+		return UpdateComponentRegulationByRuleChainId(chainId, updateData)
+	}
+
+	createInfo := model.ComponentRegulation{
+		UserName:    username,
+		Root:        ruleChain.RuleChain.Root,
+		Disabled:    ruleChain.RuleChain.Disabled,
+		Name:        ruleChain.RuleChain.Name,
+		RuleChainId: chainId,
+		RuleConfig:  string(v),
+		CreatedAt:   &t,
+		UpdatedAt:   &t,
+	}
+	return CreateComponentRegulation(createInfo)
 }
 
-func (d *RuleDao) saveRuleChain(username, chainId string, def []byte) error {
-	var paths = []string{d.config.DataDir, constants.DirWorkflows}
-	paths = append(paths, username, constants.DirWorkflowsRule)
-	pathStr := path.Join(paths...)
-	//创建文件夹
-	_ = fs.CreateDirs(pathStr)
-	//保存到文件
-	var buf bytes.Buffer
-	err := json.Indent(&buf, def, "", "  ")
+// 从数据库删除规则链
+func (d *RuleDao) DeleteToComponentRegulation(username, chainId string) error {
+	return DeleteComponentRegulationByRuleChainIdPhysical(chainId)
+}
+
+// 按规则链id从数据库查询规则链
+func (d *RuleDao) FindComponentRegulationByRuleChainId(chainId string) ([]byte, error) {
+	ruleConfigInfo, gErr := FindComponentRegulationByRuleChainId(chainId)
+	if gErr != nil {
+		return nil, gErr
+	}
+	return []byte(ruleConfigInfo.RuleConfig), nil
+}
+
+// 查询最新修改的一条规则链
+func (d *RuleDao) FindLatestComponentRegulation() ([]byte, error) {
+	ruleConfigInfo, gErr := FindLatestComponentRegulation()
+	if gErr != nil {
+		return nil, gErr
+	}
+	return []byte(ruleConfigInfo.RuleConfig), nil
+}
+
+func (d *RuleDao) ListToComponentRegulation(username, keywords string, root *bool, disabled *bool, size, page int) ([]types.RuleChain, int, error) {
+	var ruleChains []types.RuleChain
+	totalCount := 0
+	list, total, err := FindComponentRegulationByPage(page, size, root, disabled, keywords)
 	if err != nil {
-		return err
+		return ruleChains, totalCount, err
 	}
-
-	//保存规则链到文件
-	return fs.SaveFile(filepath.Join(pathStr, chainId+constants.RuleChainFileSuffix), buf.Bytes())
-}
-func (d *RuleDao) Delete(username, chainId string) error {
-	var paths = []string{d.config.DataDir, constants.DirWorkflows}
-	paths = append(paths, username, constants.DirWorkflowsRule)
-	pathStr := path.Join(paths...)
-	file := filepath.Join(pathStr, chainId+constants.RuleChainFileSuffix)
-	if err := os.RemoveAll(file); err != nil {
-		return err
-	}
-	return d.deleteIndex(chainId)
-}
-
-func (d *RuleDao) getIndexPath() string {
-	return filepath.Join(d.config.DataDir, constants.DirWorkflows, d.username, constants.DirWorkflowsRule, constants.FileNameIndex)
-}
-func (d *RuleDao) rebuildIndex() error {
-	var paths []string
-	paths = append(paths, d.config.DataDir, constants.DirWorkflows)
-	paths = append(paths, d.username, constants.DirWorkflowsRule)
-
-	// 构建完整的路径
-	basePath := filepath.Join(paths...)
-
-	// 读取目录下的所有文件
-	files, err := os.ReadDir(basePath)
-	if err != nil {
-		return err
-	}
-
-	// 遍历文件
-	for _, file := range files {
-		if file.IsDir() {
+	totalCount = int(total)
+	for _, item := range list {
+		var ruleChainItem types.RuleChain
+		if err := json.Unmarshal([]byte(item.RuleConfig), &ruleChainItem); err != nil {
 			continue
 		}
-		if filepath.Ext(strings.ToLower(file.Name())) == constants.RuleChainFileSuffix {
-			// 构建文件的完整路径
-			filePath := filepath.Join(basePath, file.Name())
+		ruleChains = append(ruleChains, ruleChainItem)
+	}
+	return ruleChains, totalCount, nil
+}
 
-			// 读取文件内容
-			data, err := os.ReadFile(filePath)
-			if err != nil {
-				continue
-			}
-
-			// 解析 JSON 数据到 RuleChain 结构体
-			var ruleChain types.RuleChain
-			err = json.Unmarshal(data, &ruleChain)
-			if err != nil {
-				continue
-			}
-			d.createIndex(ruleChain)
+func (d *RuleDao) GetAllComponentRegulation(username string) ([]types.RuleChain, error) {
+	var ruleChains []types.RuleChain
+	list, err := GetAllLoadComponentRegulation(username)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range list {
+		var ruleChainItem types.RuleChain
+		if err := json.Unmarshal([]byte(item.RuleConfig), &ruleChainItem); err != nil {
+			continue
 		}
+		ruleChains = append(ruleChains, ruleChainItem)
 	}
-	return d.saveIndex(d.getIndexPath())
-}
-func (d *RuleDao) loadIndex(indexPath string) error {
-	d.Lock()
-	defer d.Unlock()
-	file, err := os.Open(indexPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	if err := json.NewDecoder(file).Decode(&d.index); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (d *RuleDao) createIndex(ruleChain types.RuleChain) {
-	updateTime, _ := ruleChain.RuleChain.GetAdditionalInfo(constants.KeyUpdateTime)
-	chainId := ruleChain.RuleChain.ID
-	// 更新索引
-	meta := RuleMeta{
-		Name:       ruleChain.RuleChain.Name,
-		ID:         chainId,
-		Root:       ruleChain.RuleChain.Root,
-		Disabled:   ruleChain.RuleChain.Disabled,
-		UpdateTime: str.ToString(updateTime),
-	}
-	d.Lock()
-	defer d.Unlock()
-	d.index.Rules[chainId] = meta
-}
-
-func (d *RuleDao) deleteIndex(chainId string) error {
-	d.Lock()
-	delete(d.index.Rules, chainId)
-	d.Unlock()
-	return d.saveIndex(d.getIndexPath())
-}
-func (d *RuleDao) saveIndex(indexPath string) error {
-	d.Lock()
-	defer d.Unlock()
-	file, err := os.Create(indexPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	if err := json.NewEncoder(file).Encode(d.index); err != nil {
-		return err
-	}
-	return nil
-}
-func (d *RuleDao) getAllIndex() []RuleMeta {
-	d.RLock()
-	defer d.RUnlock()
-	var items []RuleMeta
-	for _, v := range d.index.Rules {
-		items = append(items, v)
-	}
-	return items
+	return ruleChains, nil
 }
