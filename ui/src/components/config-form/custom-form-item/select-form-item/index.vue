@@ -16,6 +16,14 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  allowCreate: {
+    type: Boolean,
+    default: false,
+  },
+  filterable: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -35,6 +43,13 @@ function initValue() {
   const hasModelValue = props.options.some(
     (item) => item.value === props.modelValue,
   );
+  
+  // 如果允许创建自定义值，且当前值不为空，则保持当前值
+  if (props.allowCreate && props.modelValue) {
+    return;
+  }
+  
+  // 否则，如果当前值在选项中存在，保持当前值；否则设置为第一个选项的值
   modelValue.value = hasModelValue ? props.modelValue : firstValue;
 }
 
@@ -53,7 +68,12 @@ onMounted(() => {
 <template>
   <div class="relative w-full">
     <div>
-      <el-select v-model="modelValue" v-bind="$attrs">
+      <el-select 
+        v-model="modelValue" 
+        :allow-create="allowCreate"
+        :filterable="filterable"
+        v-bind="$attrs"
+      >
         <el-option
           v-for="item in options"
           :key="item.value"
