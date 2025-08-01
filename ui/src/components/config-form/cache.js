@@ -9,6 +9,7 @@ import StringFormItem from '@src/components/config-form/custom-form-item/string-
 import ScriptFormItem from '@src/components/config-form/custom-form-item/script-form-item/index.vue';
 import SelectFormItem from '@src/components/config-form/custom-form-item/select-form-item/index.vue';
 import TextareaFormItem from '@src/components/config-form/custom-form-item/textarea-form-item/index.vue';
+import JsonTextareaFormItem from '@src/components/config-form/custom-form-item/json-textarea-form-item/index.vue';
 import TableFormItem from '@src/components/config-form/custom-form-item/table-form-item/index.vue';
 import SwitchNodeFormItem from '@src/components/config-form/custom-form-item/switch-node-form-item/index.vue';
 import SliderFormItem from '@src/components/config-form/custom-form-item/slider-form-item/index.vue';
@@ -31,6 +32,7 @@ const cache = {
       script: shallowRef(ScriptFormItem),
       select: shallowRef(SelectFormItem),
       textarea: shallowRef(TextareaFormItem),
+      jsonTextarea: shallowRef(JsonTextareaFormItem),
       table: shallowRef(TableFormItem),
       switchNode: shallowRef(SwitchNodeFormItem),
       slider: shallowRef(SliderFormItem),

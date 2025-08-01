@@ -1254,6 +1254,15 @@ export const locales = {
           label: '不传输request body',
           desc: '不把消息负荷传输给配置的服务地址',
         },
+        body: {
+          label: '请求体',
+          desc: '支持表达式或值替换，示例: ${msg.value}、{"name":"${msg.name}","type":"admin"}。如果为空，则传输当前节点消息',
+          component: {
+            type: 'jsonTextarea',
+            rows: 6,
+            placeholder: '请输入内容...'
+          }
+        },
         headers: {
           label: '请求头',
           desc: '可以使用 ${metadata.key} 读取元数据中的变量或者使用 ${msg.key} 读取消息负荷中的变量进行替换',

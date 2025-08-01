@@ -169,6 +169,12 @@ export function generateFormFields(configFields) {
       fieldItem.componentProps.rows = field?.component?.rows || 2;
       fieldItem.componentProps.desc = field.desc;
     }
+    if (field.component && field.component.type === 'jsonTextarea') {
+      fieldItem.component = 'jsonTextarea';
+      fieldItem.componentProps.rows = field?.component?.rows || 6;
+      fieldItem.componentProps.placeholder = field?.component?.placeholder || '请输入内容...';
+      fieldItem.componentProps.desc = field.desc;
+    }
     if (field.component && field.component.type === 'table') {
       fieldItem.component = 'table';
       fieldItem.componentProps.options = field.component.options || [];
