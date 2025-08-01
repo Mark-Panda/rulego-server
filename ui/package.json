@@ -63,5 +63,8 @@
   },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"
+  },
+  "overrides": {
+    "quill": "^2.0.2"
   }
 }

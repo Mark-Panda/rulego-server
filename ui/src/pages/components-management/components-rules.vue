@@ -1,5 +1,5 @@
 <script lang="js" setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { QuillEditor } from '@vueup/vue-quill';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
@@ -36,9 +36,11 @@ const ruleForm = ref({
 
 // 富文本编辑器内容
 const editorContent = ref('');
+// 编辑器key，用于强制重新渲染
+const editorKey = ref(0);
 
 // Quill编辑器配置
-const editorOptions = {
+const editorOptions = ref({
   theme: 'snow',
   modules: {
     toolbar: [
@@ -51,7 +53,7 @@ const editorOptions = {
     ]
   },
   placeholder: '请输入组件使用规则...'
-};
+});
 
 // 表单验证规则
 const formRules = {
@@ -340,7 +342,7 @@ const toggleRuleStatus = async (row) => {
 };
 
 // 编辑规则
-const editRule = (row) => {
+const editRule = async (row) => {
   isEditing.value = true;
   isViewing.value = false;
   editingId.value = row.id;
@@ -355,14 +357,32 @@ const editRule = (row) => {
     useRuleDesc: row.usageRules || ''
   };
   
-  // 设置富文本编辑器内容
+  // 编辑模式下恢复带placeholder的配置
+  editorOptions.value = {
+    theme: 'snow',
+    modules: {
+      toolbar: [
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        [{ 'color': [] }, { 'background': [] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['link'],
+        ['clean']
+      ]
+    },
+    placeholder: '请输入组件使用规则...'
+  };
+  
+  // 强制重新渲染编辑器
+  editorKey.value++;
+  
+  // 使用 nextTick 确保 DOM 更新后再设置内容
+  await nextTick();
   editorContent.value = row.usageRules || '';
-  // 恢复默认placeholder
-  editorOptions.placeholder = '请输入组件使用规则...';
 };
 
 // 查看规则
-const viewRule = (row) => {
+const viewRule = async (row) => {
   isEditing.value = false;
   isViewing.value = true;
   editingId.value = row.id;
@@ -377,15 +397,28 @@ const viewRule = (row) => {
     useRuleDesc: row.usageRules || ''
   };
   
-  // 设置富文本编辑器内容
-  editorContent.value = row.usageRules || '';
+  // 查看模式下创建没有placeholder的配置
+  editorOptions.value = {
+    theme: 'snow',
+    modules: {
+      toolbar: [
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        [{ 'color': [] }, { 'background': [] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['link'],
+        ['clean']
+      ]
+    }
+    // 不设置 placeholder 属性
+  };
   
-  // 如果有内容，清除placeholder
-  if (row.usageRules && row.usageRules.trim()) {
-    editorOptions.placeholder = '';
-  } else {
-    editorOptions.placeholder = '请输入组件使用规则...';
-  }
+  // 强制重新渲染编辑器
+  editorKey.value++;
+  
+  // 使用 nextTick 确保 DOM 更新后再设置内容
+  await nextTick();
+  editorContent.value = row.usageRules || '';
 };
 
 // 删除规则
@@ -421,11 +454,12 @@ const deleteRule = async (row) => {
 };
 
 // 新增规则
-const addRule = () => {
+const addRule = async () => {
   isEditing.value = false;
   isViewing.value = false;
   editingId.value = null;
   dialogVisible.value = true;
+  
   // 重置表单
   ruleForm.value = {
     componentName: '',
@@ -434,10 +468,29 @@ const addRule = () => {
     useDesc: '',
     useRuleDesc: ''
   };
-  // 重置富文本编辑器内容
+  
+  // 新增模式下恢复带placeholder的配置
+  editorOptions.value = {
+    theme: 'snow',
+    modules: {
+      toolbar: [
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        [{ 'color': [] }, { 'background': [] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['link'],
+        ['clean']
+      ]
+    },
+    placeholder: '请输入组件使用规则...'
+  };
+  
+  // 强制重新渲染编辑器
+  editorKey.value++;
+  
+  // 使用 nextTick 确保 DOM 更新后再清空内容
+  await nextTick();
   editorContent.value = '';
-  // 恢复默认placeholder
-  editorOptions.placeholder = '请输入组件使用规则...';
 };
 
 // 富文本编辑器内容变化处理
@@ -455,14 +508,16 @@ const onComponentNameChange = (componentName) => {
 };
 
 // 关闭弹窗
-const closeDialog = () => {
+const closeDialog = async () => {
   dialogVisible.value = false;
   isEditing.value = false;
   isViewing.value = false;
   editingId.value = null;
+  
   if (formRef.value) {
     formRef.value.resetFields();
   }
+  
   ruleForm.value = {
     componentName: '',
     componentType: '',
@@ -470,9 +525,29 @@ const closeDialog = () => {
     useDesc: '',
     useRuleDesc: ''
   };
+  
+  // 关闭时恢复带placeholder的默认配置
+  editorOptions.value = {
+    theme: 'snow',
+    modules: {
+      toolbar: [
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        [{ 'color': [] }, { 'background': [] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['link'],
+        ['clean']
+      ]
+    },
+    placeholder: '请输入组件使用规则...'
+  };
+  
+  // 强制重新渲染编辑器
+  editorKey.value++;
+  
+  // 使用 nextTick 确保 DOM 更新后再清空内容
+  await nextTick();
   editorContent.value = '';
-  // 恢复默认placeholder
-  editorOptions.placeholder = '请输入组件使用规则...';
 };
 
 // 提交表单
@@ -789,6 +864,7 @@ onMounted(async () => {
         <el-form-item label="使用规则描述" prop="useRuleDesc">
           <div class="quill-editor-wrapper">
             <QuillEditor
+              :key="editorKey"
               v-model:content="editorContent"
               :options="editorOptions"
               @update:content="onEditorChange"
