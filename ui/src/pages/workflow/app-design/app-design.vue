@@ -16,6 +16,7 @@ import {
   mapFlowDataModelToRuleGoModel,
   mapRuleGoModelToFlowDataModel,
   generateStaticAnchors,
+  restoreLoadDataFunctions,
 } from '@src/pages/workflow/app-design/utils';
 import { NODE_TYPE_MAP } from '@src/pages/workflow/app-design/constant';
 import { nodeUtils } from '@src/utils/flow-utils';
@@ -247,9 +248,12 @@ function generateSwitchNodeFormValue(val) {
 
 function nodeListSelectedHandler(item) {
   const nodeType = item.type;
+  console.log(`=== nodeListSelectedHandler 处理 ${nodeType} 节点 ===`);
+  console.log('item.fields:', item.fields);
   let form = generateFormData(item);
   form = generateStaticFormData(form, item);
   let fields = generateFormFields(item.fields);
+  console.log('generateFormFields 返回的 fields:', fields);
   const nodeView = findComponentByType(nodeType, menuList.value);
   fields = generateStaticFormFields(fields, item, nodeView);
   let anchors = generateStaticAnchors(item);
@@ -292,6 +296,31 @@ function nodeListSelectedHandler(item) {
 }
 
 function setSelectedNodeModel(nodeModel) {
+  if (nodeModel && nodeModel.properties && nodeModel.properties.fields) {
+    console.log(`=== 设置选中节点模型: ${nodeModel.type} ===`);
+    console.log('原始 rawNodeType:', nodeModel.properties.rawNodeType);
+    
+    // 获取原始节点配置
+    const rawNodeType = nodeModel.properties.rawNodeType || nodeModel.type;
+    const originalConfig = findComponentByType(rawNodeType, bakMenuList.value);
+    
+    if (originalConfig) {
+      console.log('找到原始配置:', originalConfig);
+      // 恢复 loadData 函数
+      const restoredFields = restoreLoadDataFunctions(nodeModel.properties.fields, originalConfig);
+      console.log('恢复后的 fields:', restoredFields);
+      
+      // 更新节点模型的 fields
+      nodeModel.properties.fields = restoredFields;
+      
+      // 同时更新 fields ref，确保传递给 node-form 的数据包含 loadData
+      fields.value = restoredFields;
+      console.log('已更新 fields ref:', fields.value);
+    } else {
+      console.warn('未找到原始配置:', rawNodeType);
+    }
+  }
+  
   selectedNodeModel.value = nodeModel;
   nextTick(() => {
     refreshNodeLogBus.emit();
@@ -606,6 +635,8 @@ defineExpose({
       :anchor-can-connect-only-one-node="anchorCanConnectOnlyOneNode"
       :selected-node-id="selectedNodeModel.id"
       :chain-id="props.modelValue?.ruleChain?.id"
+      :logic-flow="getLf()"
+      :current-node-model="selectedNodeModel"
       @add="nodeFormAddHandler"
     />
     <run-drawer ref="runDrawerRef" :flow-data="props.modelValue" />

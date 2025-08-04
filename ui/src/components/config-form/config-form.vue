@@ -26,10 +26,18 @@ const defaultProps = computed(
 const formItems = computed(() => {
   return Object.keys(props.fields).map((key) => {
     let { rules, ...others } = props.fields[key];
-    return {
+    const formItem = {
       prop: key,
       ...others,
     };
+    
+    // 调试日志：检查 loadData 函数
+    if (formItem.component === 'select' && formItem.componentProps?.loadData) {
+      console.log(`=== config-form.vue 处理 ${key} 字段 ===`);
+      console.log('formItem.componentProps.loadData:', formItem.componentProps.loadData);
+    }
+    
+    return formItem;
   });
 });
 const rules = computed(() => {
@@ -109,6 +117,15 @@ defineExpose({
                 ? defaultProps[formItem.component]
                 : {}),
               ...formItem.componentProps,
+              ...(formItem.component === 'select' ? { 
+                fieldConfig: { 
+                  name: formItem.prop, 
+                  ...formItem,
+                  componentProps: {
+                    ...formItem.componentProps
+                  }
+                } 
+              } : {})
             }"
             v-on="formItem.componentEvents || {}"
             v-model="model[formItem.prop]"

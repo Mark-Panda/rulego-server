@@ -163,6 +163,16 @@ export function generateFormFields(configFields) {
       fieldItem.componentProps.filterable = field.component.filterable;
       fieldItem.componentProps.multiple = field.component.multiple;
       fieldItem.componentProps.desc = field.desc;
+      // 保存loadData函数引用，用于后续动态加载选项
+      if (field.component.loadData) {
+        console.log(`=== generateFormFields 处理 ${field.name} 字段的 loadData ===`);
+        console.log('field.component.loadData:', field.component.loadData);
+        fieldItem.componentProps.loadData = field.component.loadData;
+        console.log('fieldItem.componentProps.loadData 设置后:', fieldItem.componentProps.loadData);
+        console.log('=== generateFormFields 处理完成 ===');
+      } else {
+        console.log(`=== generateFormFields 处理 ${field.name} 字段 - 无 loadData ===`);
+      }
     }
     if (field.component && field.component.type === 'textarea') {
       fieldItem.component = 'textarea';
@@ -792,6 +802,29 @@ export function findComponentByType(type, menuList) {
     .flat();
   const component = allComponents.find((item) => item.type === type);
   return component;
+}
+
+/**
+ * @description 恢复fields中丢失的loadData函数
+ */
+export function restoreLoadDataFunctions(fields, originalConfig) {
+  if (!fields || !originalConfig || !originalConfig.fields) return fields;
+  
+  const restoredFields = cloneDeep(fields);
+  
+  // 遍历原始配置，找到有loadData的字段
+  originalConfig.fields.forEach((originalField) => {
+    if (originalField.component && originalField.component.loadData && originalField.name) {
+      const fieldName = originalField.name;
+      if (restoredFields[fieldName] && restoredFields[fieldName].componentProps) {
+        console.log(`=== 恢复 ${fieldName} 字段的 loadData 函数 ===`);
+        restoredFields[fieldName].componentProps.loadData = originalField.component.loadData;
+        console.log('loadData 函数已恢复:', restoredFields[fieldName].componentProps.loadData);
+      }
+    }
+  });
+  
+  return restoredFields;
 }
 
 export function generateFormData(config) {

@@ -1,5 +1,5 @@
 <script lang="js" setup>
-import { ref, onBeforeUnmount } from 'vue';
+import { ref, onBeforeUnmount, provide, inject, watch } from 'vue';
 import { isUndefined } from 'lodash-es';
 import EventBus from '@src/utils/event-bus';
 import ConfigForm from '@src/components/config-form/config-form.vue';
@@ -34,7 +34,19 @@ const props = defineProps({
   chainId: {
     type: [Number, String],
   },
+  logicFlow: {
+    type: Object,
+    default: null,
+  },
+  currentNodeModel: {
+    type: Object,
+    default: null,
+  },
 });
+
+// 提供LogicFlow实例和当前节点模型给子组件
+provide('logicFlow', props.logicFlow);
+provide('currentNodeModel', props.currentNodeModel);
 
 const emit = defineEmits(['add', 'tabChange']);
 
@@ -42,6 +54,24 @@ const clearNodeFormValidateBus = EventBus.clearNodeFormValidate();
 
 const configFormRef = ref();
 const tabActiveName = ref('config');
+
+// 监控 fields 变化，检查 loadData 函数
+watch(() => props.fields, (newFields) => {
+  console.log('=== node-form.vue 接收到的 fields ===');
+  Object.keys(newFields).forEach(key => {
+    const field = newFields[key];
+    if (field.component === 'select') {
+      console.log(`${key} 字段:`, {
+        hasComponentProps: !!field.componentProps,
+        hasLoadData: !!field.componentProps?.loadData,
+        loadDataType: typeof field.componentProps?.loadData
+      });
+      if (field.componentProps?.loadData) {
+        console.log(`${key} 字段的 loadData:`, field.componentProps.loadData);
+      }
+    }
+  });
+}, { immediate: true, deep: true });
 
 function clearValidate() {
   return configFormRef.value?.clearValidate();

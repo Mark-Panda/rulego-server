@@ -1,16 +1,73 @@
 // 获取当前规则链可以选择的节点，排除当前节点
-function loadSelectNodes(lf, currentNodeModel, field, query) {
+export function loadSelectNodes(lf, currentNodeModel, field, query) {
+  console.log('loadSelectNodes 被调用:', { 
+    hasLf: !!lf, 
+    hasCurrentNodeModel: !!currentNodeModel, 
+    currentNodeId: currentNodeModel?.id,
+    hasField: !!field 
+  });
+  
+  console.log('=== loadSelectNodes 参数详细检查 ===');
+  console.log('参数1 lf:', lf, typeof lf);
+  console.log('参数2 currentNodeModel:', currentNodeModel, typeof currentNodeModel);
+  console.log('参数3 field:', field, typeof field);
+  console.log('参数4 query:', query, typeof query);
+  console.log('=== 参数检查结束 ===');
+  
   let options = [];
   try {
-    let ruleChainDSL = lf.getGraphData();
-    ruleChainDSL?.metadata?.nodes.forEach((item) => {
-      if (item.id && item.id !== currentNodeModel.id) {
-        options.push({ value: item.id, label: item.name });
-      }
-    });
+    if (!lf) {
+      console.warn('loadSelectNodes: LogicFlow 实例不存在');
+      return options;
+    }
+    
+    let graphData = lf.getGraphData();
+    console.log('LogicFlow图数据:', graphData);
+    console.log('图数据类型:', typeof graphData);
+    
+    // LogicFlow的getGraphData()返回格式: { nodes: [], edges: [] }
+    if (graphData && graphData.nodes && Array.isArray(graphData.nodes)) {
+      console.log('使用 graphData.nodes 结构，节点数量:', graphData.nodes.length);
+      graphData.nodes.forEach((item, index) => {
+        console.log(`节点 ${index}:`, {
+          id: item.id,
+          type: item.type,
+          text: item.text,
+          properties: item.properties
+        });
+        
+        if (item.id && item.id !== currentNodeModel?.id) {
+          // 优先使用节点的text作为显示名称，其次使用formData中的title，最后使用id
+          const label = item.text || 
+                       item.properties?.formData?.additionalInfo?.title || 
+                       item.properties?.formData?.title || 
+                       item.id;
+          options.push({ value: item.id, label });
+          console.log(`添加选项: ${item.id} -> ${label}`);
+        } else if (item.id === currentNodeModel?.id) {
+          console.log(`跳过当前节点: ${item.id}`);
+        }
+      });
+    } else {
+      console.warn('loadSelectNodes: LogicFlow图数据格式不正确');
+      console.log('可用的属性:', Object.keys(graphData || {}));
+      console.log('nodes属性类型:', typeof graphData?.nodes);
+    }
+    
+    console.log('最终生成的选项:', options);
   } catch (e) {
+    console.error('loadSelectNodes 错误:', e);
   } finally {
-    field.component.options = options;
+    console.log('=== loadSelectNodes finally 部分 ===');
+    console.log('field 类型:', typeof field);
+    console.log('field 值:', field);
+    if (field && typeof field === 'object' && field.component) {
+      console.log('设置 field.component.options');
+      field.component.options = options;
+    } else {
+      console.log('跳过设置 field.component.options，因为 field 不是有效对象');
+    }
+    console.log('=== finally 部分结束 ===');
   }
   return options;
 }
