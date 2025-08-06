@@ -162,9 +162,12 @@ function updateNodePropertiesHeightById(nodeId, move = true) {
   if (rootEl) {
     setTimeout(() => {
       // Info: 克隆节点放到 body 里边，防止 logicflow 缩放时影响节点高度计算
-      let containerParentEl = rootEl.querySelector(`#${nodeId}`);
+      let containerParentEl = rootEl.querySelector(`[id="${nodeId}"]`);
 
-      if (!containerParentEl) return;
+      if (!containerParentEl) {
+        console.warn(`节点 ${nodeId} 未找到，可能还未完全渲染`);
+        return;
+      }
       containerParentEl = containerParentEl.cloneNode(true);
       const containerEl = containerParentEl.children[0];
       if (!containerEl) {
@@ -175,10 +178,11 @@ function updateNodePropertiesHeightById(nodeId, move = true) {
       containerParentEl.style.position = 'fixed';
       containerParentEl.style.top = '0';
       containerParentEl.style.left = '0';
-      containerParentEl.style.backgroundColor = 'red';
+      containerParentEl.style.visibility = 'hidden'; // 避免闪烁，移除红色背景
       document.body.appendChild(containerParentEl);
 
       const { height } = containerEl.getBoundingClientRect();
+      console.log(`节点 ${nodeId} 计算高度: ${height}, 原高度: ${oHeight}`);
 
       containerParentEl.remove();
 
@@ -196,7 +200,7 @@ function updateNodePropertiesHeightById(nodeId, move = true) {
           model.move(0, -((oHeight - nHeight) / 2));
         }
       }
-    }, 0);
+    }, 10); // 稍微增加延迟时间
   }
 }
 
@@ -278,25 +282,34 @@ function updateNodePropertiesAnchorsYById(nodeId) {
   const properties = model.properties;
   const rootEl = model.graphModel.rootEl;
   if (rootEl) {
+    // 增加延迟时间，确保节点内容完全渲染
     setTimeout(() => {
       // Info: 克隆节点放到 body 里边，防止 logicflow 缩放时影响节点高度计算
-      let containerParentEl = rootEl.querySelector(`#${nodeId}`);
+      let containerParentEl = rootEl.querySelector(`[id="${nodeId}"]`);
 
-      if (!containerParentEl) return;
+      if (!containerParentEl) {
+        console.warn(`节点 ${nodeId} 未找到，可能还未完全渲染`);
+        return;
+      }
       containerParentEl = containerParentEl.cloneNode(true);
       containerParentEl.removeAttribute('id');
       containerParentEl.style.position = 'fixed';
       containerParentEl.style.top = '0';
       containerParentEl.style.left = '0';
+      containerParentEl.style.visibility = 'hidden'; // 避免闪烁
       document.body.appendChild(containerParentEl);
 
       const anchorItems = containerParentEl.querySelectorAll('.anchor-item');
       const newAnchors = cloneDeep(properties.anchors);
+      
+      console.log(`节点 ${nodeId} 找到 ${anchorItems.length} 个锚点项`);
+      
       anchorItems.forEach((item) => {
         const anchorId = item.getAttribute('data-id');
         const anchor = newAnchors.find((anchor) => anchor.id === anchorId);
         if (anchor) {
           anchor.top = item.offsetTop;
+          console.log(`锚点 ${anchorId} 位置更新为: ${item.offsetTop}`);
         }
       });
 
@@ -305,7 +318,7 @@ function updateNodePropertiesAnchorsYById(nodeId) {
       });
 
       containerParentEl.remove();
-    }, 0);
+    }, 50); // 增加延迟时间从0ms到50ms
   }
 }
 
@@ -498,10 +511,17 @@ function updateSelectedNodePropertiesFormData(data) {
   if (!selectedNodeId.value) return;
   updateNodePropertiesFormData(selectedNodeId.value, data);
   updateNodePropertiesAnchorsById(selectedNodeId.value);
-  updateNodePropertiesHeightById(selectedNodeId.value);
-  updateNodePropertiesAnchorsYById(selectedNodeId.value);
-  updateSelectedNodePropertiesNextNodes();
-  updateEdgesPosition();
+  
+  // 增加延迟确保表单数据更新后再计算高度和锚点位置
+  setTimeout(() => {
+    updateNodePropertiesHeightById(selectedNodeId.value);
+    
+    setTimeout(() => {
+      updateNodePropertiesAnchorsYById(selectedNodeId.value);
+      updateSelectedNodePropertiesNextNodes();
+      updateEdgesPosition();
+    }, 60); // 确保高度更新完成后再更新锚点位置
+  }, 20);
 }
 
 function initFlow() {
@@ -654,7 +674,8 @@ async function lfRender() {
     updateNodePropertiesHeightById(item.id);
   });
 
-  await nextTick();
+  // 增加延迟确保节点高度更新完成后再计算锚点位置
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   nodes.forEach((item) => {
     updateNodePropertiesAnchorsYById(item.id);
