@@ -7,7 +7,6 @@ import { ElMessage } from 'element-plus';
 import JsonEditor from '@src/components/json-editor/json-editor.vue';
 
 const tableData = ref([]);
-const expandedRows = ref(new Set());
 const detailData = ref({});
 const paginationState = ref({
   page: 1,
@@ -137,17 +136,45 @@ async function refreshTableData() {
   }
 }
 
-function toggleRowExpansion(row) {
-  const rowId = row.id;
-  if (expandedRows.value.has(rowId)) {
-    expandedRows.value.delete(rowId);
-  } else {
-    expandedRows.value.add(rowId);
-  }
+// 详情弹窗相关
+const detailDialogVisible = ref(false);
+const currentDetailRows = ref([]);
+const currentMainRow = ref(null);
+const nodeNameMap = ref({});
+
+function getNodeName(nodeId) {
+  if (!nodeId) return '';
+  return nodeNameMap.value[nodeId] || nodeId;
 }
 
-function isRowExpanded(row) {
-  return expandedRows.value.has(row.id);
+async function openDetailDialog(row) {
+  currentMainRow.value = row;
+  currentDetailRows.value = detailData.value[row.id] || [];
+  detailDialogVisible.value = true;
+  try {
+    if (row.chainId) {
+      const res = await Api.getRulesDetail(row.chainId);
+      const metadata = res?.metadata;
+      const map = {};
+      if (metadata && Array.isArray(metadata.nodes)) {
+        metadata.nodes.forEach((n) => {
+          if (n && n.id) {
+            map[n.id] = n.name || n.id;
+          }
+        });
+      }
+      nodeNameMap.value = map;
+    } else {
+      nodeNameMap.value = {};
+    }
+  } catch (e) {
+    nodeNameMap.value = {};
+  }
+}
+function closeDetailDialog() {
+  detailDialogVisible.value = false;
+  currentDetailRows.value = [];
+  currentMainRow.value = null;
 }
 
 function handleSizeChange(val) {
@@ -373,160 +400,10 @@ onMounted(() => {
         :border="true"
         stripe
         row-key="id"
-        @row-click="toggleRowExpansion"
+        @row-click="openDetailDialog"
         class="cursor-pointer"
       >
-        <!-- 展开按钮列 -->
-        <el-table-column type="expand" width="50">
-          <template #default="props">
-            <!-- 子表 -->
-            <div class="p-4 bg-gray-50">
-              <h4 class="text-lg font-medium mb-3">节点执行详情</h4>
-              <el-table
-                :data="detailData[props.row.id] || []"
-                size="small"
-                border
-                stripe
-                style="width: 100%"
-              >
-                <el-table-column prop="nodeId" label="节点ID" min-width="140" align="left">
-                  <template #default="scope">
-                    <el-tooltip
-                      v-if="scope.row.nodeId"
-                      effect="dark"
-                      :content="scope.row.nodeId"
-                      placement="top"
-                    >
-                      <span>
-                        {{
-                          scope.row.nodeId && scope.row.nodeId.length > 12
-                            ? scope.row.nodeId.substring(0, 12) + '...'
-                            : scope.row.nodeId
-                        }}
-                      </span>
-                    </el-tooltip>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="relationType" label="关系类型" min-width="120" align="left" />
-                <el-table-column label="消息ID" min-width="180" align="left">
-                  <template #default="scope">
-                    <el-tooltip
-                      v-if="scope.row.msg && scope.row.msg.id"
-                      effect="dark"
-                      :content="scope.row.msg.id"
-                      placement="top"
-                    >
-                      <span>
-                        {{
-                          scope.row.msg && scope.row.msg.id && scope.row.msg.id.length > 16
-                            ? scope.row.msg.id.substring(0, 16) + '...'
-                            : (scope.row.msg ? scope.row.msg.id : '')
-                        }}
-                      </span>
-                    </el-tooltip>
-                  </template>
-                </el-table-column>
-                <el-table-column label="消息类型" min-width="150" align="left">
-                  <template #default="scope">
-                    <el-tooltip
-                      v-if="scope.row.msg && scope.row.msg.type"
-                      effect="dark"
-                      :content="scope.row.msg.type"
-                      placement="top"
-                    >
-                      <span>
-                        {{
-                          scope.row.msg && scope.row.msg.type && scope.row.msg.type.length > 12
-                            ? scope.row.msg.type.substring(0, 12) + '...'
-                            : (scope.row.msg ? scope.row.msg.type : '')
-                        }}
-                      </span>
-                    </el-tooltip>
-                  </template>
-                </el-table-column>
-                <el-table-column label="输入数据" width="80" align="center">
-                  <template #default="scope">
-                    <el-tooltip 
-                      v-if="scope.row.msg && scope.row.msg.data"
-                      effect="dark" 
-                      content="查看输入数据" 
-                      placement="top"
-                    >
-                      <el-button
-                        @click="showDataHandler(scope.row.msg)"
-                        :link="true"
-                      >
-                        <el-icon><el-icon-more-filled /></el-icon>
-                      </el-button>
-                    </el-tooltip>
-                  </template>
-                </el-table-column>
-                <el-table-column label="输出数据" width="80" align="center">
-                  <template #default="scope">
-                    <el-tooltip 
-                      v-if="scope.row.outMsg && scope.row.outMsg.data"
-                      effect="dark" 
-                      content="查看输出数据" 
-                      placement="top"
-                    >
-                      <el-button
-                        @click="showDataHandler(scope.row.outMsg)"
-                        :link="true"
-                      >
-                        <el-icon><el-icon-more-filled /></el-icon>
-                      </el-button>
-                    </el-tooltip>
-                  </template>
-                </el-table-column>
-                <el-table-column
-                  label="元数据"
-                  width="80"
-                  align="center"
-                >
-                  <template #default="scope">
-                    <el-tooltip 
-                      v-if="scope.row.msg && scope.row.msg.metadata"
-                      effect="dark" 
-                      content="查看元数据" 
-                      placement="top"
-                    >
-                      <el-button
-                        @click="showMetadataHandler(scope.row.msg)"
-                        :link="true"
-                      >
-                        <el-icon><el-icon-more-filled /></el-icon>
-                      </el-button>
-                    </el-tooltip>
-                  </template>
-                </el-table-column>
-                <el-table-column label="错误" width="80" align="center">
-                  <template #default="scope">
-                    <el-tooltip
-                      v-if="scope.row.err"
-                      effect="dark"
-                      :content="scope.row.err"
-                      placement="top"
-                    >
-                      <el-button
-                        @click="showErrorHandler(scope.row.err)"
-                        :link="true"
-                        type="danger"
-                        :disabled="!scope.row.err"
-                      >
-                        <el-icon><el-icon-warning /></el-icon>
-                      </el-button>
-                    </el-tooltip>
-                  </template>
-                </el-table-column>
-                <el-table-column label="执行时间(ms)" min-width="120" align="left">
-                  <template #default="scope">
-                    <span>{{ scope.row.executionTime || '-' }}</span>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </div>
-          </template>
-        </el-table-column>
+        
         
         <!-- 主表列 -->
         <el-table-column
@@ -603,6 +480,178 @@ onMounted(() => {
       </div>
     </div>
     
+    <!-- 详情弹窗：展示某条运行日志下的节点执行详情 -->
+    <el-dialog
+      v-model="detailDialogVisible"
+      :append-to-body="false"
+      :destroy-on-close="true"
+      :close-on-click-modal="true"
+      :close-on-press-escape="true"
+      :draggable="true"
+      top="10px"
+      width="70%"
+      :before-close="closeDetailDialog"
+      :title="currentMainRow ? `运行记录详情 - ${dayjs(currentMainRow.ts).format('YYYY-MM-DD HH:mm:ss')}` : '运行记录详情'"
+    >
+      <div class="p-2 bg-gray-50 rounded">
+        <h4 class="text-lg font-medium mb-3">节点执行详情</h4>
+        <el-table
+          :data="currentDetailRows"
+          size="small"
+          border
+          stripe
+          style="width: 100%"
+        >
+          <el-table-column label="组件名称" min-width="160" align="left">
+            <template #default="scope">
+              <span>{{ getNodeName(scope.row.nodeId) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="nodeId" label="节点ID" min-width="140" align="left">
+            <template #default="scope">
+              <el-tooltip
+                v-if="scope.row.nodeId"
+                effect="dark"
+                :content="scope.row.nodeId"
+                placement="top"
+              >
+                <span>
+                  {{
+                    scope.row.nodeId && scope.row.nodeId.length > 12
+                      ? scope.row.nodeId.substring(0, 12) + '...'
+                      : scope.row.nodeId
+                  }}
+                </span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <!-- 将输入数据/输出数据/元数据紧随节点ID之后 -->
+          <el-table-column label="输入数据" width="80" align="center">
+            <template #default="scope">
+              <el-tooltip 
+                v-if="scope.row.msg && scope.row.msg.data"
+                effect="dark" 
+                content="查看输入数据" 
+                placement="top"
+              >
+                <el-button
+                  @click="showDataHandler(scope.row.msg)"
+                  :link="true"
+                >
+                  <el-icon><el-icon-more-filled /></el-icon>
+                </el-button>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column label="输出数据" width="80" align="center">
+            <template #default="scope">
+              <el-tooltip 
+                v-if="scope.row.outMsg && scope.row.outMsg.data"
+                effect="dark" 
+                content="查看输出数据" 
+                placement="top"
+              >
+                <el-button
+                  @click="showDataHandler(scope.row.outMsg)"
+                  :link="true"
+                >
+                  <el-icon><el-icon-more-filled /></el-icon>
+                </el-button>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column
+            label="元数据"
+            width="80"
+            align="center"
+          >
+            <template #default="scope">
+              <el-tooltip 
+                v-if="scope.row.msg && scope.row.msg.metadata"
+                effect="dark" 
+                content="查看元数据" 
+                placement="top"
+              >
+                <el-button
+                  @click="showMetadataHandler(scope.row.msg)"
+                  :link="true"
+                >
+                  <el-icon><el-icon-more-filled /></el-icon>
+                </el-button>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column prop="relationType" label="关系类型" min-width="120" align="left" />
+          <el-table-column label="错误" width="80" align="center">
+            <template #default="scope">
+              <el-tooltip
+                v-if="scope.row.err"
+                effect="dark"
+                :content="scope.row.err"
+                placement="top"
+              >
+                <el-button
+                  @click="showErrorHandler(scope.row.err)"
+                  :link="true"
+                  type="danger"
+                  :disabled="!scope.row.err"
+                >
+                  <el-icon><el-icon-warning /></el-icon>
+                </el-button>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column label="执行时间(ms)" min-width="120" align="left">
+            <template #default="scope">
+              <span>{{ scope.row.executionTime || '-' }}</span>
+            </template>
+          </el-table-column>
+          <!-- 将消息ID和消息类型移动到表格最后 -->
+          <el-table-column label="消息ID" min-width="180" align="left">
+            <template #default="scope">
+              <el-tooltip
+                v-if="scope.row.msg && scope.row.msg.id"
+                effect="dark"
+                :content="scope.row.msg.id"
+                placement="top"
+              >
+                <span>
+                  {{
+                    scope.row.msg && scope.row.msg.id && scope.row.msg.id.length > 16
+                      ? scope.row.msg.id.substring(0, 16) + '...'
+                      : (scope.row.msg ? scope.row.msg.id : '')
+                  }}
+                </span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column label="消息类型" min-width="150" align="left">
+            <template #default="scope">
+              <el-tooltip
+                v-if="scope.row.msg && scope.row.msg.type"
+                effect="dark"
+                :content="scope.row.msg.type"
+                placement="top"
+              >
+                <span>
+                  {{
+                    scope.row.msg && scope.row.msg.type && scope.row.msg.type.length > 12
+                      ? scope.row.msg.type.substring(0, 12) + '...'
+                      : (scope.row.msg ? scope.row.msg.type : '')
+                  }}
+                </span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <template #footer>
+        <div class="flex justify-end">
+          <el-button @click="closeDetailDialog">关闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
     <el-dialog
       :append-to-body="false"
       :destroy-on-close="true"
