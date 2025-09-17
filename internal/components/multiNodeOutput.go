@@ -39,10 +39,9 @@ func (c *MultiNodeOutput) Type() string {
 
 // 实现ComponentDefGetter接口修改组件名和描述
 func (c *MultiNodeOutput) Def() types.ComponentForm {
-	// relationTypes := &[]string{"Success", "Failure"}
 	return types.ComponentForm{
 		Label: "multiNodeOutput",
-		Desc:  "多节点输出",
+		Desc:  "获取已完成节点的输出信息",
 	}
 }
 
@@ -69,7 +68,6 @@ func (c *MultiNodeOutput) Init(ruleConfig types.Config, configuration types.Conf
 // ctx:规则引擎处理消息上下文
 // msg:消息
 func (c *MultiNodeOutput) OnMsg(ctx types.RuleContext, msg types.RuleMsg) {
-	// 将验证结果和原始DSL一起传递
 	resultData := map[string]interface{}{}
 	isSuccess := true
 	errStr := ""
