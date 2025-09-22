@@ -44,14 +44,63 @@ class CustomEdgeModel extends BezierEdgeModel {
   isNearStraightLine(point1, point2) {
     const dx = Math.abs(point2.x - point1.x);
     const dy = Math.abs(point2.y - point1.y);
-    const threshold = 15; // 允许的偏差阈值
+    // 降低阈值，使直线检测更加严格
+    const threshold = 10; // 允许的偏差阈值
     
     // 接近水平线
     if (dy < threshold) return true;
-    // 接近垂直线
+    // 接近垂直线  
     if (dx < threshold) return true;
     
     return false;
+  }
+
+  /**
+   * 判断是否需要避免节点遮挡和交叉
+   */
+  needsAvoidObstacle(startPoint, endPoint) {
+    const dx = endPoint.x - startPoint.x;
+    const dy = endPoint.y - startPoint.y;
+    
+    // 如果目标节点在源节点的左上方或左下方，需要避免直线连接
+    if (dx < 0) return true;
+    
+    // 如果水平距离小于垂直距离且水平距离较小，可能造成遮挡
+    if (Math.abs(dx) < Math.abs(dy) && Math.abs(dx) < 80) return true;
+    
+    return false;
+  }
+
+  /**
+   * 智能选择连线类型和offset值
+   */
+  calculateSmartOffset(startPoint, endPoint) {
+    const distance = this.calculateDistance(startPoint, endPoint);
+    const isNearStraight = this.isNearStraightLine(startPoint, endPoint);
+    const needsAvoid = this.needsAvoidObstacle(startPoint, endPoint);
+    
+    // 距离阈值设置
+    const shortDistance = 100;  // 短距离
+    const mediumDistance = 200; // 中等距离
+    
+    if (distance < shortDistance) {
+      // 短距离处理
+      if (isNearStraight && !needsAvoid) {
+        return 0.5; // 直线
+      } else {
+        return 15; // 平缓弧线
+      }
+    } else if (distance < mediumDistance) {
+      // 中等距离处理
+      if (needsAvoid) {
+        return 40; // 中等S线
+      } else {
+        return 25; // 平缓弧线
+      }
+    } else {
+      // 长距离处理
+      return 60; // 标准S线，但不过于弯曲
+    }
   }
 
   /**
@@ -60,20 +109,8 @@ class CustomEdgeModel extends BezierEdgeModel {
   initEdgeData(data) {
     super.initEdgeData(data);
     
-    // 计算距离并判断连线类型
-    const distance = this.calculateDistance(this.startPoint, this.endPoint);
-    const shortDistanceThreshold = 120;
-    const isNearStraight = this.isNearStraightLine(this.startPoint, this.endPoint);
-    
-    if (distance < shortDistanceThreshold) {
-      if (isNearStraight) {
-        // 短距离且接近直线时，使用极小的偏移值保持直线
-        this.offset = 2;
-      } else {
-        // 短距离但不是直线时，使用小偏移值创建平缓弧线
-        this.offset = 20;
-      }
-    }
+    // 使用智能算法计算offset
+    this.offset = this.calculateSmartOffset(this.startPoint, this.endPoint);
   }
 
   /**
@@ -124,23 +161,8 @@ class CustomEdgeModel extends BezierEdgeModel {
       this.updateEndPoint(endPoint);
     }
     
-    // 重新计算距离并判断连线类型
-    const distance = this.calculateDistance(this.startPoint, this.endPoint);
-    const shortDistanceThreshold = 120;
-    const isNearStraight = this.isNearStraightLine(this.startPoint, this.endPoint);
-    
-    if (distance < shortDistanceThreshold) {
-      if (isNearStraight) {
-        // 短距离且接近直线时，使用极小的偏移值保持直线
-        this.offset = 2;
-      } else {
-        // 短距离但不是直线时，使用小偏移值创建平缓弧线
-        this.offset = 20;
-      }
-    } else {
-      // 长距离时使用默认偏移值
-      this.offset = 100;
-    }
+    // 使用智能算法重新计算offset
+    this.offset = this.calculateSmartOffset(this.startPoint, this.endPoint);
     
     // 这里需要将原有的pointsList设置为空，才能触发重新计算控制点
     this.pointsList = [];

@@ -195,6 +195,27 @@ function updateNodeConnectedEdges(nodeId) {
 }
 
 /**
+ * 更新所有连线的路径
+ */
+function updateAllEdgesPath() {
+  if (!lf) return;
+  
+  try {
+    const graphData = lf.getGraphData();
+    const edges = graphData.edges || [];
+    
+    edges.forEach((edgeData) => {
+      const edgeModel = lf.getEdgeModelById(edgeData.id);
+      if (edgeModel && typeof edgeModel.updatePathByAnchor === 'function') {
+        edgeModel.updatePathByAnchor();
+      }
+    });
+  } catch (error) {
+    console.warn('更新所有连线时出错:', error);
+  }
+}
+
+/**
  * @description 根据 id 计算节点高度
  * @param nodeId string
  * @param move boolean 是否进行节点矫正
@@ -734,6 +755,11 @@ async function lfRender() {
     flowData.value.edges.forEach((item) => {
       lf.addEdge(item);
     });
+    
+    // 添加连线后立即更新路径，确保初始化时应用我们的自定义逻辑
+    setTimeout(() => {
+      updateAllEdgesPath();
+    }, 100);
   }, 0);
   const startNode = nodes.find((item) => {
     return (
