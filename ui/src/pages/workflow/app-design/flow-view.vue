@@ -151,6 +151,50 @@ function flowBlankClickHandler() {
 }
 
 /**
+ * 处理节点拖动事件
+ */
+function handleNodeDrag({ data }) {
+  // 在拖动过程中实时更新连线
+  updateNodeConnectedEdges(data.id);
+}
+
+/**
+ * 处理节点拖动结束事件
+ */
+function handleNodeDrop({ data }) {
+  // 拖动结束后再次更新连线以确保正确
+  updateNodeConnectedEdges(data.id);
+}
+
+/**
+ * 更新指定节点的所有连线
+ */
+function updateNodeConnectedEdges(nodeId) {
+  if (!lf || !nodeId) return;
+  
+  try {
+    const nodeModel = lf.getNodeModelById(nodeId);
+    if (!nodeModel) return;
+    
+    // 更新该节点的所有输出连线
+    nodeModel.outgoing.edges.forEach((edge) => {
+      if (edge && typeof edge.updatePathByAnchor === 'function') {
+        edge.updatePathByAnchor();
+      }
+    });
+    
+    // 更新该节点的所有输入连线
+    nodeModel.incoming.edges.forEach((edge) => {
+      if (edge && typeof edge.updatePathByAnchor === 'function') {
+        edge.updatePathByAnchor();
+      }
+    });
+  } catch (error) {
+    console.warn('更新连线时出错:', error);
+  }
+}
+
+/**
  * @description 根据 id 计算节点高度
  * @param nodeId string
  * @param move boolean 是否进行节点矫正
@@ -559,6 +603,9 @@ function initFlow() {
     lf.on('anchor:drop', flowAnchorDropHandler);
     lf.on('node:mouseup', handleMouseup);
     lf.on('blank:click', flowBlankClickHandler);
+    // 添加节点拖动相关事件监听
+    lf.on('node:drag', handleNodeDrag);
+    lf.on('node:drop', handleNodeDrop);
 
     flowNodes.forEach((node) => {
       register(node, lf);
@@ -1081,6 +1128,8 @@ onBeforeUnmount(() => {
         lf.off('anchor:drop', flowAnchorDropHandler);
         lf.off('node:mouseup', handleMouseup);
         lf.off('blank:click', flowBlankClickHandler);
+        lf.off('node:drag', handleNodeDrag);
+        lf.off('node:drop', handleNodeDrop);
         
         // 清理总线事件
         if (jumpToNodeBus && typeof jumpToNodeBus.off === 'function') {
