@@ -15,6 +15,19 @@ export const rawRequest = axios.create({
   timeout: 1000 * 5,
 });
 
+rawRequest.interceptors.request.use(
+  (config) => {
+    const token = getSession(SESSIONSTORAGE_KEYS.TOKEN);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
+
 request.interceptors.request.use(
   (config) => {
     const token = getSession(SESSIONSTORAGE_KEYS.TOKEN);
@@ -48,6 +61,13 @@ request.interceptors.response.use(
       }
       
       ElMessage.error(`Error ${status}: ${data.message || JSON.stringify(data)}`);
+    } else if (error.code === 'ERR_NETWORK' || error.message.includes('CORS')) {
+      // 对于CORS或网络错误，不显示错误信息（特别是登出接口）
+      console.warn('网络请求失败（可能是CORS问题）:', error.message);
+      // 对于登出接口的CORS错误，不显示用户错误信息
+      if (!error.config?.url?.includes('/logout')) {
+        ElMessage.error('网络连接失败，请检查网络连接');
+      }
     } else {
       ElMessage.error(`Error: ${error.message}`);
     }
