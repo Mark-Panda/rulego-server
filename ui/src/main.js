@@ -5,6 +5,7 @@ import App from '@src/app.vue';
 import router from '@src/router';
 import store from '@src/store';
 import { initTheme } from '@src/utils/theme';
+import useUserStore from '@src/store/module/user';
 
 import '@src/style/tailwind.css';
 import 'element-plus/dist/index.css';
@@ -22,4 +23,11 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(`ElIcon${key}`, component);
 }
 
-app.use(ElementPlus).use(store).use(router).mount('#app');
+app.use(ElementPlus).use(store).use(router);
+
+// 在应用启动后检查token有效性
+app.mount('#app');
+
+// 在应用挂载后初始化用户store
+const userStore = useUserStore();
+userStore.checkTokenExpiry();

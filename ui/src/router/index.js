@@ -62,14 +62,19 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const token = getSession(SESSIONSTORAGE_KEYS.TOKEN);
+  
+  // 如果用户已登录
   if (token) {
     if (to.path === '/login') {
-      next(from);
+      // 已登录用户访问登录页，重定向到首页
+      next('/');
     } else {
       next();
     }
   } else {
+    // 用户未登录
     if (to.path !== '/login') {
+      // 未登录用户访问非登录页，重定向到登录页
       next('/login');
     } else {
       next();

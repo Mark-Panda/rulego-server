@@ -1,10 +1,31 @@
 <script lang="js" setup>
 import MenuLayout from '@src/layout/components/default/menu.vue';
 import { ref } from 'vue';
+import useUserStore from '@src/store/module/user';
+import { ElMessageBox } from 'element-plus';
 
 const collapsed = ref(false);
+const userStore = useUserStore();
+
 const toggleCollapse = () => {
   collapsed.value = !collapsed.value;
+};
+
+const handleLogout = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要退出登录吗？',
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    );
+    userStore.logout();
+  } catch {
+    // 用户取消操作
+  }
 };
 </script>
 
@@ -43,6 +64,23 @@ const toggleCollapse = () => {
               <el-icon><el-icon-setting /></el-icon>
             </el-button>
           </el-tooltip>
+          <el-dropdown @command="handleLogout">
+            <el-button type="text" class="flex items-center">
+              <el-avatar :size="32" class="mr-2">
+                <el-icon><el-icon-user /></el-icon>
+              </el-avatar>
+              <span class="text-sm text-gray-600 dark:text-gray-300">admin</span>
+              <el-icon class="ml-1"><el-icon-arrow-down /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="logout">
+                  <el-icon><el-icon-switch-button /></el-icon>
+                  退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </div>
       <div class="flex-grow overflow-auto p-4">

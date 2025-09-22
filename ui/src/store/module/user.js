@@ -1,15 +1,46 @@
 import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
+import { SESSIONSTORAGE_KEYS, getSession, setSession, clearAllSession } from '@src/utils/sessionstorage';
+import { logout as logoutApi } from '@src/api/module/login';
+import router from '@src/router';
 
 const useUserStore = defineStore('user', () => {
-  const count = ref(0);
-  const doubleCount = computed(() => count.value * 2);
+  const token = ref(getSession(SESSIONSTORAGE_KEYS.TOKEN));
+  const isLoggedIn = computed(() => !!token.value);
 
-  function increment() {
-    count.value++;
+  function setToken(newToken) {
+    token.value = newToken;
+    setSession(SESSIONSTORAGE_KEYS.TOKEN, newToken);
   }
 
-  return { count, doubleCount, increment };
+  async function logout() {
+    try {
+      // 调用后端登出接口
+      await logoutApi();
+    } catch (error) {
+      // 即使后端调用失败，也要清理本地数据
+      console.warn('后端登出接口调用失败:', error);
+    } finally {
+      // 清理本地数据
+      token.value = null;
+      clearAllSession();
+      router.push('/login');
+    }
+  }
+
+  function checkTokenExpiry() {
+    if (!token.value) {
+      logout();
+    }
+  }
+
+  return { 
+    token, 
+    isLoggedIn, 
+    setToken, 
+    logout, 
+    checkTokenExpiry 
+  };
 });
 
 export default useUserStore;

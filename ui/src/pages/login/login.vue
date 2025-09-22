@@ -4,9 +4,10 @@ import { useRouter } from 'vue-router';
 import { login } from '@src/api/index';
 import { ElMessage } from 'element-plus';
 import { User, Lock } from '@element-plus/icons-vue';
-import { SESSIONSTORAGE_KEYS, setSession } from '@src/utils/sessionstorage';
+import useUserStore from '@src/store/module/user';
 
 const router = useRouter();
+const userStore = useUserStore();
 
 const formRef = ref();
 const form = ref({
@@ -25,7 +26,7 @@ async function handleSubmit() {
     await formRef.value.validate();
     const loginRes = await login(form.value);
     const token = loginRes.token;
-    setSession(SESSIONSTORAGE_KEYS.TOKEN, token);
+    userStore.setToken(token);
     ElMessage.success('登录成功');
     router.replace('/');
   } catch (error) {
