@@ -19,7 +19,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/rulego/rulego/utils/str"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -27,12 +26,15 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/rulego/rulego/utils/str"
+
 	"github.com/rulego/rulego-server/config"
 	"github.com/rulego/rulego-server/config/logger"
 	"github.com/rulego/rulego-server/internal/router"
 	"github.com/rulego/rulego-server/internal/service"
 	"gopkg.in/ini.v1"
 
+	_ "github.com/rulego/rulego-components/stats/streamsql"
 	endpointApi "github.com/rulego/rulego/api/types/endpoint"
 	"github.com/rulego/rulego/node_pool"
 )
