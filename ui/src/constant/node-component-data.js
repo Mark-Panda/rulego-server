@@ -2132,6 +2132,24 @@ export const locales = {
           desc: '',
         },
       },
+      'transform/multiNodeOutput': {
+        label: '多节点输出',
+        icon: '/images/fork.svg',
+        desc: '<ul><li>将消息同时发送到多个指定的节点</li><li>支持选择画布中的任意节点作为输出目标</li><li>支持添加自定义节点ID</li></ul>',
+        nodeId: {
+          label: '目标节点',
+          desc: '选择要发送消息的目标节点，也可以手动添加自定义节点ID',
+          rules: [{ required: true, message: '至少选择一个目标节点' }],
+          component: {
+            type: 'select',
+            filterable: true,
+            allowCreate: false,
+            allowAddOption: true,
+            multiple: true,
+            loadData: loadSelectNodes,
+          },
+        },
+      },
       'ai/createImage': {
         label: 'AI图像生成',
         icon: '/images/generate-image.svg',
