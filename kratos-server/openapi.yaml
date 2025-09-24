@@ -1,0 +1,1313 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: ""
+    version: 0.0.1
+paths:
+    /api/v1/componentUseRule/create:
+        post:
+            tags:
+                - RuleService
+            description: 组件使用规则相关接口
+            operationId: RuleService_CreateComponentUseRule
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.rulego.v1.CreateComponentUseRuleRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.CreateComponentUseRuleResponse'
+    /api/v1/componentUseRule/delete:
+        delete:
+            tags:
+                - RuleService
+            operationId: RuleService_DeleteComponentUseRule
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.DeleteComponentUseRuleResponse'
+    /api/v1/componentUseRule/get:
+        get:
+            tags:
+                - RuleService
+            operationId: RuleService_GetComponentUseRule
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: string
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.GetComponentUseRuleResponse'
+    /api/v1/componentUseRule/page:
+        get:
+            tags:
+                - RuleService
+            operationId: RuleService_ListComponentUseRules
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+                - name: componentType
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.ListComponentUseRulesResponse'
+    /api/v1/componentUseRule/update:
+        post:
+            tags:
+                - RuleService
+            operationId: RuleService_UpdateComponentUseRule
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.rulego.v1.UpdateComponentUseRuleRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.UpdateComponentUseRuleResponse'
+    /api/v1/components:
+        get:
+            tags:
+                - ComponentService
+            description: 获取所有组件列表
+            operationId: ComponentService_ListComponents
+            parameters:
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+                - name: category
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.ListComponentsResponse'
+    /api/v1/dynamic-components:
+        get:
+            tags:
+                - ComponentService
+            description: 获取自定义动态组件列表
+            operationId: ComponentService_ListCustomComponents
+            parameters:
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+                - name: checkMarketplace
+                  in: query
+                  schema:
+                    type: boolean
+                - name: checkMy
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.ListCustomComponentsResponse'
+    /api/v1/dynamic-components/{id}:
+        get:
+            tags:
+                - ComponentService
+            description: 获取自定义动态组件DSL
+            operationId: ComponentService_GetCustomComponentDSL
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.GetCustomComponentDSLResponse'
+        post:
+            tags:
+                - ComponentService
+            description: 安装/升级自定义动态组件
+            operationId: ComponentService_UpgradeCustomComponent
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.rulego.v1.UpgradeCustomComponentRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.UpgradeCustomComponentResponse'
+        delete:
+            tags:
+                - ComponentService
+            description: 卸载自定义动态组件
+            operationId: ComponentService_UninstallCustomComponent
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.UninstallCustomComponentResponse'
+    /api/v1/locales:
+        get:
+            tags:
+                - LocaleService
+            description: 获取本地化配置
+            operationId: LocaleService_GetLocales
+            parameters:
+                - name: lang
+                  in: query
+                  schema:
+                    type: string
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.GetLocalesResponse'
+        post:
+            tags:
+                - LocaleService
+            description: 保存本地化配置
+            operationId: LocaleService_SaveLocales
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.rulego.v1.SaveLocalesRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.SaveLocalesResponse'
+    /api/v1/login:
+        post:
+            tags:
+                - UserService
+            description: 用户登录
+            operationId: UserService_Login
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.rulego.v1.LoginRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.LoginResponse'
+    /api/v1/logs/debug:
+        get:
+            tags:
+                - LogService
+            description: 获取调试日志
+            operationId: LogService_GetDebugLogs
+            parameters:
+                - name: chainId
+                  in: query
+                  schema:
+                    type: string
+                - name: nodeId
+                  in: query
+                  schema:
+                    type: string
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.GetDebugLogsResponse'
+    /api/v1/logs/runs:
+        get:
+            tags:
+                - LogService
+            description: 获取运行日志列表
+            operationId: LogService_ListRunLogs
+            parameters:
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: chainId
+                  in: query
+                  schema:
+                    type: string
+                - name: startTime
+                  in: query
+                  schema:
+                    type: string
+                - name: endTime
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.ListRunLogsResponse'
+        delete:
+            tags:
+                - LogService
+            description: 删除运行日志
+            operationId: LogService_DeleteRunLogs
+            parameters:
+                - name: ids
+                  in: query
+                  schema:
+                    type: array
+                    items:
+                        type: string
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.DeleteRunLogsResponse'
+    /api/v1/marketplace/components:
+        get:
+            tags:
+                - ComponentService
+            description: 获取组件市场组件列表
+            operationId: ComponentService_ListMarketplaceComponents
+            parameters:
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+                - name: checkMy
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.ListMarketplaceComponentsResponse'
+    /api/v1/rules:
+        get:
+            tags:
+                - RuleService
+            description: 获取规则链列表
+            operationId: RuleService_ListRules
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.ListRulesResponse'
+    /api/v1/rules/{id}:
+        get:
+            tags:
+                - RuleService
+            description: 获取规则链详情
+            operationId: RuleService_GetRule
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.GetRuleResponse'
+        post:
+            tags:
+                - RuleService
+            description: 保存规则链
+            operationId: RuleService_SaveRule
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.rulego.v1.SaveRuleRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.SaveRuleResponse'
+        delete:
+            tags:
+                - RuleService
+            description: 删除规则链
+            operationId: RuleService_DeleteRule
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.DeleteRuleResponse'
+    /api/v1/rules/{id}/base:
+        post:
+            tags:
+                - RuleService
+            description: 保存规则链基本信息
+            operationId: RuleService_SaveRuleBaseInfo
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.rulego.v1.SaveRuleBaseInfoRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.SaveRuleBaseInfoResponse'
+    /api/v1/rules/{id}/config/{varType}:
+        post:
+            tags:
+                - RuleService
+            description: 保存规则链配置
+            operationId: RuleService_SaveRuleConfiguration
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: varType
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.rulego.v1.SaveRuleConfigurationRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.SaveRuleConfigurationResponse'
+    /api/v1/rules/{id}/execute/{msgType}:
+        post:
+            tags:
+                - RuleService
+            description: 执行规则链
+            operationId: RuleService_ExecuteRule
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: msgType
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.rulego.v1.ExecuteRuleRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.ExecuteRuleResponse'
+    /api/v1/rules/{id}/latest:
+        get:
+            tags:
+                - RuleService
+            description: 获取最新的规则链
+            operationId: RuleService_GetLatestRule
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.GetLatestRuleResponse'
+    /api/v1/rules/{id}/notify/{msgType}:
+        post:
+            tags:
+                - RuleService
+            description: 推送消息到规则链
+            operationId: RuleService_PostMessage
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: msgType
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.rulego.v1.PostMessageRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.PostMessageResponse'
+    /api/v1/rules/{id}/operate/{type}:
+        post:
+            tags:
+                - RuleService
+            description: 操作规则链（部署/下线）
+            operationId: RuleService_OperateRule
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: type
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.rulego.v1.OperateRuleRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.OperateRuleResponse'
+    /api/v1/shared-nodes:
+        get:
+            tags:
+                - ComponentService
+            description: 获取所有共享组件
+            operationId: ComponentService_ListSharedComponents
+            parameters:
+                - name: username
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.ListSharedComponentsResponse'
+    /api/v1/verify-token:
+        post:
+            tags:
+                - UserService
+            description: 验证Token
+            operationId: UserService_VerifyToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.rulego.v1.VerifyTokenRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.rulego.v1.VerifyTokenResponse'
+components:
+    schemas:
+        api.rulego.v1.ComponentInfo:
+            type: object
+            properties:
+                type:
+                    type: string
+                name:
+                    type: string
+                category:
+                    type: string
+                description:
+                    type: string
+                version:
+                    type: string
+                author:
+                    type: string
+                configurationForm:
+                    type: object
+                    additionalProperties:
+                        type: string
+                isCustom:
+                    type: boolean
+                isInstalled:
+                    type: boolean
+            description: 组件信息
+        api.rulego.v1.ComponentUseRule:
+            type: object
+            properties:
+                id:
+                    type: string
+                componentType:
+                    type: string
+                usageInfo:
+                    type: string
+                createdTime:
+                    type: string
+                updatedTime:
+                    type: string
+                username:
+                    type: string
+            description: 组件使用规则
+        api.rulego.v1.CreateComponentUseRuleRequest:
+            type: object
+            properties:
+                componentType:
+                    type: string
+                usageInfo:
+                    type: string
+                username:
+                    type: string
+            description: 创建组件使用规则请求
+        api.rulego.v1.CreateComponentUseRuleResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+                id:
+                    type: string
+            description: 创建组件使用规则响应
+        api.rulego.v1.CustomComponentDetail:
+            type: object
+            properties:
+                id:
+                    type: string
+                type:
+                    type: string
+                name:
+                    type: string
+                description:
+                    type: string
+                version:
+                    type: string
+                author:
+                    type: string
+                dsl:
+                    type: string
+                createdTime:
+                    type: string
+                updatedTime:
+                    type: string
+                isInstalled:
+                    type: boolean
+            description: 自定义组件详情
+        api.rulego.v1.DebugLogEntry:
+            type: object
+            properties:
+                chainId:
+                    type: string
+                nodeId:
+                    type: string
+                message:
+                    type: string
+                timestamp:
+                    type: string
+                level:
+                    type: string
+                metadata:
+                    type: object
+                    additionalProperties:
+                        type: string
+            description: 调试日志条目
+        api.rulego.v1.DeleteComponentUseRuleResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+            description: 删除组件使用规则响应
+        api.rulego.v1.DeleteRuleResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+            description: 删除规则链响应
+        api.rulego.v1.DeleteRunLogsResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+                deletedCount:
+                    type: integer
+                    format: int32
+            description: 删除运行日志响应
+        api.rulego.v1.ExecuteRuleRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                msgType:
+                    type: string
+                data:
+                    type: string
+                username:
+                    type: string
+                metadata:
+                    type: object
+                    additionalProperties:
+                        type: string
+            description: 执行规则链请求
+        api.rulego.v1.ExecuteRuleResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                result:
+                    type: string
+                message:
+                    type: string
+            description: 执行规则链响应
+        api.rulego.v1.GetComponentUseRuleResponse:
+            type: object
+            properties:
+                rule:
+                    $ref: '#/components/schemas/api.rulego.v1.ComponentUseRule'
+            description: 获取组件使用规则响应
+        api.rulego.v1.GetCustomComponentDSLResponse:
+            type: object
+            properties:
+                component:
+                    $ref: '#/components/schemas/api.rulego.v1.CustomComponentDetail'
+            description: 获取自定义组件DSL响应
+        api.rulego.v1.GetDebugLogsResponse:
+            type: object
+            properties:
+                logs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/api.rulego.v1.DebugLogEntry'
+                total:
+                    type: integer
+                    format: int32
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+            description: 获取调试日志响应
+        api.rulego.v1.GetLatestRuleResponse:
+            type: object
+            properties:
+                rule:
+                    $ref: '#/components/schemas/api.rulego.v1.RuleDetail'
+            description: 获取最新规则链响应
+        api.rulego.v1.GetLocalesResponse:
+            type: object
+            properties:
+                locales:
+                    type: object
+                    additionalProperties:
+                        type: string
+            description: 获取本地化配置响应
+        api.rulego.v1.GetRuleResponse:
+            type: object
+            properties:
+                rule:
+                    $ref: '#/components/schemas/api.rulego.v1.RuleDetail'
+            description: 获取规则链详情响应
+        api.rulego.v1.ListComponentUseRulesResponse:
+            type: object
+            properties:
+                rules:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/api.rulego.v1.ComponentUseRule'
+                total:
+                    type: integer
+                    format: int32
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+            description: 分页查询组件使用规则响应
+        api.rulego.v1.ListComponentsResponse:
+            type: object
+            properties:
+                endpoints:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/api.rulego.v1.ComponentInfo'
+                nodes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/api.rulego.v1.ComponentInfo'
+                builtins:
+                    type: object
+                    additionalProperties:
+                        type: string
+                sharedNodes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/api.rulego.v1.SharedComponentInfo'
+            description: 获取组件列表响应
+        api.rulego.v1.ListCustomComponentsResponse:
+            type: object
+            properties:
+                components:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/api.rulego.v1.CustomComponentDetail'
+            description: 获取自定义组件列表响应
+        api.rulego.v1.ListMarketplaceComponentsResponse:
+            type: object
+            properties:
+                components:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/api.rulego.v1.CustomComponentDetail'
+            description: 获取组件市场组件列表响应
+        api.rulego.v1.ListRulesResponse:
+            type: object
+            properties:
+                rules:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/api.rulego.v1.RuleInfo'
+                total:
+                    type: integer
+                    format: int32
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+            description: 获取规则链列表响应
+        api.rulego.v1.ListRunLogsResponse:
+            type: object
+            properties:
+                logs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/api.rulego.v1.RunLogEntry'
+                total:
+                    type: integer
+                    format: int32
+                page:
+                    type: integer
+                    format: int32
+                pageSize:
+                    type: integer
+                    format: int32
+            description: 获取运行日志列表响应
+        api.rulego.v1.ListSharedComponentsResponse:
+            type: object
+            properties:
+                components:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/api.rulego.v1.SharedComponentInfo'
+            description: 获取共享组件列表响应
+        api.rulego.v1.LoginRequest:
+            type: object
+            properties:
+                username:
+                    type: string
+                password:
+                    type: string
+            description: 登录请求
+        api.rulego.v1.LoginResponse:
+            type: object
+            properties:
+                token:
+                    type: string
+                username:
+                    type: string
+                expiresAt:
+                    type: string
+            description: 登录响应
+        api.rulego.v1.OperateRuleRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                type:
+                    type: string
+                username:
+                    type: string
+            description: 操作规则链请求
+        api.rulego.v1.OperateRuleResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+            description: 操作规则链响应
+        api.rulego.v1.PostMessageRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                msgType:
+                    type: string
+                data:
+                    type: string
+                username:
+                    type: string
+                metadata:
+                    type: object
+                    additionalProperties:
+                        type: string
+            description: 推送消息请求
+        api.rulego.v1.PostMessageResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+            description: 推送消息响应
+        api.rulego.v1.RuleDetail:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                definition:
+                    type: string
+                createdTime:
+                    type: string
+                updatedTime:
+                    type: string
+                description:
+                    type: string
+                status:
+                    type: integer
+                    format: int32
+                configuration:
+                    type: string
+            description: 规则链详情
+        api.rulego.v1.RuleInfo:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                createdTime:
+                    type: string
+                updatedTime:
+                    type: string
+                description:
+                    type: string
+                status:
+                    type: integer
+                    format: int32
+            description: 规则链基本信息
+        api.rulego.v1.RunLogEntry:
+            type: object
+            properties:
+                id:
+                    type: string
+                chainId:
+                    type: string
+                msgType:
+                    type: string
+                data:
+                    type: string
+                result:
+                    type: string
+                startTime:
+                    type: string
+                endTime:
+                    type: string
+                status:
+                    type: string
+                errorMessage:
+                    type: string
+                username:
+                    type: string
+            description: 运行日志条目
+        api.rulego.v1.SaveLocalesRequest:
+            type: object
+            properties:
+                lang:
+                    type: string
+                locales:
+                    type: object
+                    additionalProperties:
+                        type: string
+                username:
+                    type: string
+            description: 保存本地化配置请求
+        api.rulego.v1.SaveLocalesResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+            description: 保存本地化配置响应
+        api.rulego.v1.SaveRuleBaseInfoRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                description:
+                    type: string
+                username:
+                    type: string
+            description: 保存规则链基本信息请求
+        api.rulego.v1.SaveRuleBaseInfoResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+            description: 保存规则链基本信息响应
+        api.rulego.v1.SaveRuleConfigurationRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                varType:
+                    type: string
+                configuration:
+                    type: string
+                username:
+                    type: string
+            description: 保存规则链配置请求
+        api.rulego.v1.SaveRuleConfigurationResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+            description: 保存规则链配置响应
+        api.rulego.v1.SaveRuleRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                definition:
+                    type: string
+                username:
+                    type: string
+                description:
+                    type: string
+            description: 保存规则链请求
+        api.rulego.v1.SaveRuleResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+            description: 保存规则链响应
+        api.rulego.v1.SharedComponentInfo:
+            type: object
+            properties:
+                id:
+                    type: string
+                type:
+                    type: string
+                name:
+                    type: string
+                description:
+                    type: string
+                endpointType:
+                    type: string
+                configuration:
+                    type: object
+                    additionalProperties:
+                        type: string
+            description: 共享组件信息
+        api.rulego.v1.UninstallCustomComponentResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+            description: 卸载自定义组件响应
+        api.rulego.v1.UpdateComponentUseRuleRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                componentType:
+                    type: string
+                usageInfo:
+                    type: string
+                username:
+                    type: string
+            description: 更新组件使用规则请求
+        api.rulego.v1.UpdateComponentUseRuleResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+            description: 更新组件使用规则响应
+        api.rulego.v1.UpgradeCustomComponentRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                dsl:
+                    type: string
+                username:
+                    type: string
+            description: 安装/升级自定义组件请求
+        api.rulego.v1.UpgradeCustomComponentResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+            description: 安装/升级自定义组件响应
+        api.rulego.v1.VerifyTokenRequest:
+            type: object
+            properties:
+                token:
+                    type: string
+            description: 验证Token请求
+        api.rulego.v1.VerifyTokenResponse:
+            type: object
+            properties:
+                valid:
+                    type: boolean
+                username:
+                    type: string
+                expiresAt:
+                    type: string
+            description: 验证Token响应
+tags:
+    - name: ComponentService
+      description: 组件服务
+    - name: LocaleService
+      description: 本地化服务
+    - name: LogService
+      description: 日志服务
+    - name: RuleService
+      description: 规则链服务
+    - name: UserService
+      description: 用户服务

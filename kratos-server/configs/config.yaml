@@ -1,0 +1,57 @@
+server:
+  http:
+    addr: 0.0.0.0:9090
+    timeout: 10s
+  grpc:
+    addr: 0.0.0.0:9000
+    timeout: 10s
+data:
+  database:
+    driver: sqlite3
+    source: "file:rulego.db?cache=shared&mode=rwc"
+  redis:
+    addr: 127.0.0.1:6379
+    read_timeout: 0.2s
+    write_timeout: 0.2s
+rulego:
+  data_dir: "./data"
+  log_file: ""
+  cmd_white_list: "cp,scp,mvn,npm,yarn,git,make,cmake,docker,kubectl,helm,ansible,puppet,pytest,python,python3,pip,go,java,dotnet,gcc,g++,ctest"
+  load_lua_libs: "true"
+  default_username: "admin"
+  debug: true
+  max_node_log_size: 40
+  resource_mapping: "/editor/*filepath=./editor,/images/*filepath=./editor/images"
+  node_pool_file: "./node_pool.json"
+  save_run_log: false
+  script_max_execution_time: 5000
+  endpoint_enabled: true
+  secret_key: "rulego-secret"
+  event_bus_chain_id: "default"
+  jwt:
+    require_auth: false
+    secret_key: "r6G7qZ8xk9P0y1Q2w3E4r5T6y7U8i9O0pL7z8x9CvBnM3k2l1"
+    expire_time: 43200000 # 12小时
+    issuer: "rulego.cc"
+  users:
+    - username: "admin"
+      password: "admin"
+      api_key: "2af255ea5618467d914c67a8beeca31d"
+  pprof:
+    enable: false
+    addr: "0.0.0.0:6060"
+  marketplace_base_url: "http://8.134.32.225:9090/api/v1"
+  share_http_server: true
+  mcp:
+    enable: true
+    load_components_as_tool: true
+    load_chains_as_tool: true
+    load_apis_as_tool: true
+    exclude_chains: ""
+    exclude_components: "comment,iterator,delay,groupAction,ref,fork,join,for,*Filter"
+  postgresql:
+    user: "postgres"
+    password: "postgres"
+    host: "localhost"
+    port: 5432
+    dbname: "rulego"

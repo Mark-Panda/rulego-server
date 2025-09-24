@@ -1,0 +1,145 @@
+syntax = "proto3";
+
+package api.rulego.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "kratos-server/api/rulego/v1;v1";
+
+// 日志服务
+service LogService {
+    // 获取调试日志
+    rpc GetDebugLogs(GetDebugLogsRequest) returns (GetDebugLogsResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/logs/debug"
+        };
+    }
+
+    // 获取运行日志列表
+    rpc ListRunLogs(ListRunLogsRequest) returns (ListRunLogsResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/logs/runs"
+        };
+    }
+
+    // 删除运行日志
+    rpc DeleteRunLogs(DeleteRunLogsRequest) returns (DeleteRunLogsResponse) {
+        option (google.api.http) = {
+            delete: "/api/v1/logs/runs"
+        };
+    }
+}
+
+// 本地化服务
+service LocaleService {
+    // 获取本地化配置
+    rpc GetLocales(GetLocalesRequest) returns (GetLocalesResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/locales"
+        };
+    }
+
+    // 保存本地化配置
+    rpc SaveLocales(SaveLocalesRequest) returns (SaveLocalesResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/locales"
+            body: "*"
+        };
+    }
+}
+
+// 调试日志条目
+message DebugLogEntry {
+    string chain_id              = 1;
+    string node_id               = 2;
+    string message               = 3;
+    int64 timestamp              = 4;
+    string level                 = 5;  // DEBUG, INFO, WARN, ERROR
+    map<string, string> metadata = 6;
+}
+
+// 运行日志条目
+message RunLogEntry {
+    int64 id             = 1;
+    string chain_id      = 2;
+    string msg_type      = 3;
+    string data          = 4;
+    string result        = 5;
+    int64 start_time     = 6;
+    int64 end_time       = 7;
+    string status        = 8;  // SUCCESS, ERROR
+    string error_message = 9;
+    string username      = 10;
+}
+
+// 获取调试日志请求
+message GetDebugLogsRequest {
+    string chain_id = 1;
+    string node_id  = 2;
+    string username = 3;
+    int32 page      = 4;
+    int32 page_size = 5;
+}
+
+// 获取调试日志响应
+message GetDebugLogsResponse {
+    repeated DebugLogEntry logs = 1;
+    int32 total                 = 2;
+    int32 page                  = 3;
+    int32 page_size             = 4;
+}
+
+// 获取运行日志列表请求
+message ListRunLogsRequest {
+    string username  = 1;
+    int32 page       = 2;
+    int32 page_size  = 3;
+    string chain_id  = 4;  // 可选的规则链ID过滤
+    int64 start_time = 5;  // 可选的开始时间过滤
+    int64 end_time   = 6;  // 可选的结束时间过滤
+}
+
+// 获取运行日志列表响应
+message ListRunLogsResponse {
+    repeated RunLogEntry logs = 1;
+    int32 total               = 2;
+    int32 page                = 3;
+    int32 page_size           = 4;
+}
+
+// 删除运行日志请求
+message DeleteRunLogsRequest {
+    repeated int64 ids = 1;  // 要删除的日志ID列表
+    string username    = 2;
+}
+
+// 删除运行日志响应
+message DeleteRunLogsResponse {
+    bool success        = 1;
+    string message      = 2;
+    int32 deleted_count = 3;  // 实际删除的数量
+}
+
+// 获取本地化配置请求
+message GetLocalesRequest {
+    string lang     = 1;  // 语言代码，如 "zh_cn", "en_us"
+    string username = 2;
+}
+
+// 获取本地化配置响应
+message GetLocalesResponse {
+    map<string, string> locales = 1;  // 本地化键值对
+}
+
+// 保存本地化配置请求
+message SaveLocalesRequest {
+    string lang                 = 1;  // 语言代码
+    map<string, string> locales = 2;  // 本地化键值对
+    string username             = 3;
+}
+
+// 保存本地化配置响应
+message SaveLocalesResponse {
+    bool success   = 1;
+    string message = 2;
+}

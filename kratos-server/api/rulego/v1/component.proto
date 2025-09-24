@@ -1,0 +1,180 @@
+syntax = "proto3";
+
+package api.rulego.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "kratos-server/api/rulego/v1;v1";
+
+// 组件服务
+service ComponentService {
+    // 获取所有组件列表
+    rpc ListComponents(ListComponentsRequest) returns (ListComponentsResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/components"
+        };
+    }
+
+    // 获取自定义动态组件列表
+    rpc ListCustomComponents(ListCustomComponentsRequest) returns (ListCustomComponentsResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/dynamic-components"
+        };
+    }
+
+    // 获取自定义动态组件DSL
+    rpc GetCustomComponentDSL(GetCustomComponentDSLRequest) returns (GetCustomComponentDSLResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/dynamic-components/{id}"
+        };
+    }
+
+    // 安装/升级自定义动态组件
+    rpc UpgradeCustomComponent(UpgradeCustomComponentRequest) returns (UpgradeCustomComponentResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/dynamic-components/{id}"
+            body: "*"
+        };
+    }
+
+    // 卸载自定义动态组件
+    rpc UninstallCustomComponent(UninstallCustomComponentRequest) returns (UninstallCustomComponentResponse) {
+        option (google.api.http) = {
+            delete: "/api/v1/dynamic-components/{id}"
+        };
+    }
+
+    // 获取所有共享组件
+    rpc ListSharedComponents(ListSharedComponentsRequest) returns (ListSharedComponentsResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/shared-nodes"
+        };
+    }
+
+    // 获取组件市场组件列表
+    rpc ListMarketplaceComponents(ListMarketplaceComponentsRequest) returns (ListMarketplaceComponentsResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/marketplace/components"
+        };
+    }
+}
+
+// 组件信息
+message ComponentInfo {
+    string type                            = 1;
+    string name                            = 2;
+    string category                        = 3;
+    string description                     = 4;
+    string version                         = 5;
+    string author                          = 6;
+    map<string, string> configuration_form = 7;  // JSON格式的配置表单
+    bool is_custom                         = 8;  // 是否为自定义组件
+    bool is_installed                      = 9;  // 是否已安装
+}
+
+// 自定义组件详情
+message CustomComponentDetail {
+    string id          = 1;
+    string type        = 2;
+    string name        = 3;
+    string description = 4;
+    string version     = 5;
+    string author      = 6;
+    string dsl         = 7;  // 组件的DSL定义
+    int64 created_time = 8;
+    int64 updated_time = 9;
+    bool is_installed  = 10;
+}
+
+// 共享组件信息
+message SharedComponentInfo {
+    string id                         = 1;
+    string type                       = 2;
+    string name                       = 3;
+    string description                = 4;
+    string endpoint_type              = 5;  // endpoint类型
+    map<string, string> configuration = 6;  // 配置信息
+}
+
+// 获取组件列表请求
+message ListComponentsRequest {
+    string username = 1;
+    string category = 2;  // 可选的分类过滤
+}
+
+// 获取组件列表响应
+message ListComponentsResponse {
+    repeated ComponentInfo endpoints          = 1;  // endpoint组件
+    repeated ComponentInfo nodes              = 2;  // 节点组件
+    map<string, string> builtins              = 3;  // 内置选项
+    repeated SharedComponentInfo shared_nodes = 4;  // 共享节点
+}
+
+// 获取自定义组件列表请求
+message ListCustomComponentsRequest {
+    string username        = 1;
+    bool check_marketplace = 2;  // 是否检查市场组件
+    bool check_my          = 3;  // 是否检查自己的组件
+}
+
+// 获取自定义组件列表响应
+message ListCustomComponentsResponse {
+    repeated CustomComponentDetail components = 1;
+}
+
+// 获取自定义组件DSL请求
+message GetCustomComponentDSLRequest {
+    string id       = 1;
+    string username = 2;
+}
+
+// 获取自定义组件DSL响应
+message GetCustomComponentDSLResponse {
+    CustomComponentDetail component = 1;
+}
+
+// 安装/升级自定义组件请求
+message UpgradeCustomComponentRequest {
+    string id       = 1;
+    string dsl      = 2;  // 组件DSL
+    string username = 3;
+}
+
+// 安装/升级自定义组件响应
+message UpgradeCustomComponentResponse {
+    bool success   = 1;
+    string message = 2;
+}
+
+// 卸载自定义组件请求
+message UninstallCustomComponentRequest {
+    string id       = 1;
+    string username = 2;
+}
+
+// 卸载自定义组件响应
+message UninstallCustomComponentResponse {
+    bool success   = 1;
+    string message = 2;
+}
+
+// 获取共享组件列表请求
+message ListSharedComponentsRequest {
+    string username = 1;
+}
+
+// 获取共享组件列表响应
+message ListSharedComponentsResponse {
+    repeated SharedComponentInfo components = 1;
+}
+
+// 获取组件市场组件列表请求
+message ListMarketplaceComponentsRequest {
+    string username = 1;
+    bool check_my   = 2;  // 是否检查自己的组件
+}
+
+// 获取组件市场组件列表响应
+message ListMarketplaceComponentsResponse {
+    repeated CustomComponentDetail components = 1;
+}

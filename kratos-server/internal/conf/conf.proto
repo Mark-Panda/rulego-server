@@ -1,0 +1,132 @@
+syntax = "proto3";
+package kratos.api;
+
+option go_package = "kratos-server/internal/conf;conf";
+
+import "google/protobuf/duration.proto";
+
+message Bootstrap {
+    Server server = 1;
+    Data data     = 2;
+    RuleGo rulego = 3;
+}
+
+message Server {
+    message HTTP {
+        string network                   = 1;
+        string addr                      = 2;
+        google.protobuf.Duration timeout = 3;
+    }
+    message GRPC {
+        string network                   = 1;
+        string addr                      = 2;
+        google.protobuf.Duration timeout = 3;
+    }
+    HTTP http = 1;
+    GRPC grpc = 2;
+}
+
+message Data {
+    message Database {
+        string driver = 1;
+        string source = 2;
+    }
+    message Redis {
+        string network                         = 1;
+        string addr                            = 2;
+        google.protobuf.Duration read_timeout  = 3;
+        google.protobuf.Duration write_timeout = 4;
+    }
+    Database database = 1;
+    Redis redis       = 2;
+}
+
+// RuleGo 相关配置
+message RuleGo {
+    // 数据目录
+    string data_dir = 1;
+    // 日志文件
+    string log_file = 2;
+    // shell命令白名单
+    string cmd_white_list = 3;
+    // 是否加载lua库
+    string load_lua_libs = 4;
+    // 默认用户名
+    string default_username = 5;
+    // 是否调试模式
+    bool debug = 6;
+    // 最大节点日志大小
+    int32 max_node_log_size = 7;
+    // 资源映射
+    string resource_mapping = 8;
+    // 节点池文件
+    string node_pool_file = 9;
+    // 是否保存运行日志
+    bool save_run_log = 10;
+    // 脚本最大执行时间
+    int32 script_max_execution_time = 11;
+    // 是否启用endpoint
+    bool endpoint_enabled = 12;
+    // 密钥
+    string secret_key = 13;
+    // 事件总线规则链ID
+    string event_bus_chain_id = 14;
+    // JWT配置
+    JWT jwt = 15;
+    // 用户配置
+    repeated User users = 16;
+    // Pprof配置
+    Pprof pprof = 17;
+    // 组件市场根地址
+    string marketplace_base_url = 18;
+    // 是否共享HTTP服务器
+    bool share_http_server = 19;
+    // MCP配置
+    MCP mcp = 20;
+    // PostgreSQL配置
+    PostgreSQL postgresql = 21;
+}
+
+// JWT配置
+message JWT {
+    // 是否需要认证
+    bool require_auth = 1;
+    // JWT密钥
+    string secret_key = 2;
+    // JWT过期时间（毫秒）
+    int32 expire_time = 3;
+    // JWT签发者
+    string issuer = 4;
+}
+
+// 用户配置
+message User {
+    string username = 1;
+    string password = 2;
+    string api_key  = 3;
+}
+
+// Pprof配置
+message Pprof {
+    bool enable = 1;
+    string addr = 2;
+}
+
+// MCP配置
+message MCP {
+    bool enable                  = 1;
+    bool load_components_as_tool = 2;
+    bool load_chains_as_tool     = 3;
+    bool load_apis_as_tool       = 4;
+    string exclude_chains        = 5;
+    string exclude_components    = 6;
+}
+
+// PostgreSQL配置
+message PostgreSQL {
+    string user     = 1;
+    string password = 2;
+    string host     = 3;
+    int32 port      = 4;
+    string dbname   = 5;
+}

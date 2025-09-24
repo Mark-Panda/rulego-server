@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package api.rulego.v1;
+
+option go_package = "kratos-server/api/rulego/v1;v1";
+
+// The reason of the error.
+enum ErrorReason {
+    UNKNOWN               = 0;
+    RULE_NOT_FOUND        = 1;
+    COMPONENT_NOT_FOUND   = 2;
+    USER_NOT_FOUND        = 3;
+    UNAUTHORIZED          = 4;
+    INVALID_PARAMS        = 5;
+    INTERNAL_SERVER_ERROR = 6;
+}

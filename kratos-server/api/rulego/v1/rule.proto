@@ -1,0 +1,354 @@
+syntax = "proto3";
+
+package api.rulego.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "kratos-server/api/rulego/v1;v1";
+
+// 规则链服务
+service RuleService {
+    // 获取规则链列表
+    rpc ListRules(ListRulesRequest) returns (ListRulesResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/rules"
+        };
+    }
+
+    // 获取规则链详情
+    rpc GetRule(GetRuleRequest) returns (GetRuleResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/rules/{id}"
+        };
+    }
+
+    // 获取最新的规则链
+    rpc GetLatestRule(GetLatestRuleRequest) returns (GetLatestRuleResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/rules/{id}/latest"
+        };
+    }
+
+    // 保存规则链
+    rpc SaveRule(SaveRuleRequest) returns (SaveRuleResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/rules/{id}"
+            body: "*"
+        };
+    }
+
+    // 删除规则链
+    rpc DeleteRule(DeleteRuleRequest) returns (DeleteRuleResponse) {
+        option (google.api.http) = {
+            delete: "/api/v1/rules/{id}"
+        };
+    }
+
+    // 保存规则链基本信息
+    rpc SaveRuleBaseInfo(SaveRuleBaseInfoRequest) returns (SaveRuleBaseInfoResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/rules/{id}/base"
+            body: "*"
+        };
+    }
+
+    // 保存规则链配置
+    rpc SaveRuleConfiguration(SaveRuleConfigurationRequest) returns (SaveRuleConfigurationResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/rules/{id}/config/{var_type}"
+            body: "*"
+        };
+    }
+
+    // 执行规则链
+    rpc ExecuteRule(ExecuteRuleRequest) returns (ExecuteRuleResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/rules/{id}/execute/{msg_type}"
+            body: "*"
+        };
+    }
+
+    // 推送消息到规则链
+    rpc PostMessage(PostMessageRequest) returns (PostMessageResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/rules/{id}/notify/{msg_type}"
+            body: "*"
+        };
+    }
+
+    // 操作规则链（部署/下线）
+    rpc OperateRule(OperateRuleRequest) returns (OperateRuleResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/rules/{id}/operate/{type}"
+            body: "*"
+        };
+    }
+
+    // 组件使用规则相关接口
+    rpc CreateComponentUseRule(CreateComponentUseRuleRequest) returns (CreateComponentUseRuleResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/componentUseRule/create"
+            body: "*"
+        };
+    }
+
+    rpc GetComponentUseRule(GetComponentUseRuleRequest) returns (GetComponentUseRuleResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/componentUseRule/get"
+        };
+    }
+
+    rpc DeleteComponentUseRule(DeleteComponentUseRuleRequest) returns (DeleteComponentUseRuleResponse) {
+        option (google.api.http) = {
+            delete: "/api/v1/componentUseRule/delete"
+        };
+    }
+
+    rpc UpdateComponentUseRule(UpdateComponentUseRuleRequest) returns (UpdateComponentUseRuleResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/componentUseRule/update"
+            body: "*"
+        };
+    }
+
+    rpc ListComponentUseRules(ListComponentUseRulesRequest) returns (ListComponentUseRulesResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/componentUseRule/page"
+        };
+    }
+}
+
+// 规则链基本信息
+message RuleInfo {
+    string id          = 1;
+    string name        = 2;
+    int64 created_time = 3;
+    int64 updated_time = 4;
+    string description = 5;
+    int32 status       = 6;  // 0: 停用, 1: 启用
+}
+
+// 规则链详情
+message RuleDetail {
+    string id            = 1;
+    string name          = 2;
+    string definition    = 3;  // JSON格式的规则链定义
+    int64 created_time   = 4;
+    int64 updated_time   = 5;
+    string description   = 6;
+    int32 status         = 7;
+    string configuration = 8;  // JSON格式的配置信息
+}
+
+// 获取规则链列表请求
+message ListRulesRequest {
+    int32 page      = 1;
+    int32 page_size = 2;
+    string username = 3;
+}
+
+// 获取规则链列表响应
+message ListRulesResponse {
+    repeated RuleInfo rules = 1;
+    int32 total             = 2;
+    int32 page              = 3;
+    int32 page_size         = 4;
+}
+
+// 获取规则链详情请求
+message GetRuleRequest {
+    string id       = 1;
+    string username = 2;
+}
+
+// 获取规则链详情响应
+message GetRuleResponse {
+    RuleDetail rule = 1;
+}
+
+// 获取最新规则链请求
+message GetLatestRuleRequest {
+    string id       = 1;
+    string username = 2;
+}
+
+// 获取最新规则链响应
+message GetLatestRuleResponse {
+    RuleDetail rule = 1;
+}
+
+// 保存规则链请求
+message SaveRuleRequest {
+    string id          = 1;
+    string name        = 2;
+    string definition  = 3;  // JSON格式的规则链定义
+    string username    = 4;
+    string description = 5;
+}
+
+// 保存规则链响应
+message SaveRuleResponse {
+    bool success   = 1;
+    string message = 2;
+}
+
+// 删除规则链请求
+message DeleteRuleRequest {
+    string id       = 1;
+    string username = 2;
+}
+
+// 删除规则链响应
+message DeleteRuleResponse {
+    bool success   = 1;
+    string message = 2;
+}
+
+// 保存规则链基本信息请求
+message SaveRuleBaseInfoRequest {
+    string id          = 1;
+    string name        = 2;
+    string description = 3;
+    string username    = 4;
+}
+
+// 保存规则链基本信息响应
+message SaveRuleBaseInfoResponse {
+    bool success   = 1;
+    string message = 2;
+}
+
+// 保存规则链配置请求
+message SaveRuleConfigurationRequest {
+    string id            = 1;
+    string var_type      = 2;
+    string configuration = 3;  // JSON格式的配置信息
+    string username      = 4;
+}
+
+// 保存规则链配置响应
+message SaveRuleConfigurationResponse {
+    bool success   = 1;
+    string message = 2;
+}
+
+// 执行规则链请求
+message ExecuteRuleRequest {
+    string id                    = 1;
+    string msg_type              = 2;
+    string data                  = 3;  // JSON格式的消息数据
+    string username              = 4;
+    map<string, string> metadata = 5;  // 消息元数据
+}
+
+// 执行规则链响应
+message ExecuteRuleResponse {
+    bool success   = 1;
+    string result  = 2;  // JSON格式的执行结果
+    string message = 3;
+}
+
+// 推送消息请求
+message PostMessageRequest {
+    string id                    = 1;
+    string msg_type              = 2;
+    string data                  = 3;  // JSON格式的消息数据
+    string username              = 4;
+    map<string, string> metadata = 5;  // 消息元数据
+}
+
+// 推送消息响应
+message PostMessageResponse {
+    bool success   = 1;
+    string message = 2;
+}
+
+// 操作规则链请求
+message OperateRuleRequest {
+    string id       = 1;
+    string type     = 2;  // deploy, undeploy
+    string username = 3;
+}
+
+// 操作规则链响应
+message OperateRuleResponse {
+    bool success   = 1;
+    string message = 2;
+}
+
+// 组件使用规则
+message ComponentUseRule {
+    int64 id              = 1;
+    string component_type = 2;
+    string usage_info     = 3;  // JSON格式的使用信息
+    int64 created_time    = 4;
+    int64 updated_time    = 5;
+    string username       = 6;
+}
+
+// 创建组件使用规则请求
+message CreateComponentUseRuleRequest {
+    string component_type = 1;
+    string usage_info     = 2;
+    string username       = 3;
+}
+
+// 创建组件使用规则响应
+message CreateComponentUseRuleResponse {
+    bool success   = 1;
+    string message = 2;
+    int64 id       = 3;
+}
+
+// 获取组件使用规则请求
+message GetComponentUseRuleRequest {
+    int64 id        = 1;
+    string username = 2;
+}
+
+// 获取组件使用规则响应
+message GetComponentUseRuleResponse {
+    ComponentUseRule rule = 1;
+}
+
+// 删除组件使用规则请求
+message DeleteComponentUseRuleRequest {
+    int64 id        = 1;
+    string username = 2;
+}
+
+// 删除组件使用规则响应
+message DeleteComponentUseRuleResponse {
+    bool success   = 1;
+    string message = 2;
+}
+
+// 更新组件使用规则请求
+message UpdateComponentUseRuleRequest {
+    int64 id              = 1;
+    string component_type = 2;
+    string usage_info     = 3;
+    string username       = 4;
+}
+
+// 更新组件使用规则响应
+message UpdateComponentUseRuleResponse {
+    bool success   = 1;
+    string message = 2;
+}
+
+// 分页查询组件使用规则请求
+message ListComponentUseRulesRequest {
+    int32 page            = 1;
+    int32 page_size       = 2;
+    string username       = 3;
+    string component_type = 4;  // 可选的组件类型过滤条件
+}
+
+// 分页查询组件使用规则响应
+message ListComponentUseRulesResponse {
+    repeated ComponentUseRule rules = 1;
+    int32 total                     = 2;
+    int32 page                      = 3;
+    int32 page_size                 = 4;
+}
