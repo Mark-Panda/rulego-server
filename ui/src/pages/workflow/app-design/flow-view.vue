@@ -1194,6 +1194,9 @@ defineExpose({
   hideMiniMap,
   toggleMiniMap,
   getMiniMapVisible,
+  updateNodePropertiesAnchorsById,
+  updateNodePropertiesAnchorsYById,
+  updateNodePropertiesHeightById,
 });
 </script>
 

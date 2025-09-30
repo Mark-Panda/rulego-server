@@ -499,6 +499,38 @@ function render() {
   if (!flowViewRef.value) return;
   rerenderFlowData();
   flowViewRef.value.updateAllNodePropertiesHeight();
+  
+  // 延迟更新所有节点的锚点配置，确保渲染完成后正确显示输出端点
+  setTimeout(() => {
+    if (flowViewRef.value) {
+      const lf = flowViewRef.value.getLf();
+      if (lf) {
+        const graphData = lf.getGraphData();
+        const nodes = graphData.nodes || [];
+        
+        // 更新所有节点的锚点配置
+        nodes.forEach((nodeData) => {
+          try {
+            // 调用flow-view的锚点更新方法
+            flowViewRef.value.updateNodePropertiesAnchorsById?.(nodeData.id);
+          } catch (error) {
+            console.warn(`更新节点 ${nodeData.id} 锚点时出错:`, error);
+          }
+        });
+        
+        // 再次延迟更新锚点位置
+        setTimeout(() => {
+          nodes.forEach((nodeData) => {
+            try {
+              flowViewRef.value.updateNodePropertiesAnchorsYById?.(nodeData.id);
+            } catch (error) {
+              console.warn(`更新节点 ${nodeData.id} 锚点位置时出错:`, error);
+            }
+          });
+        }, 100);
+      }
+    }
+  }, 200);
 }
 
 /**
