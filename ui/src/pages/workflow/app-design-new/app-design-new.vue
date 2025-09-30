@@ -6,9 +6,11 @@ import { mapFlowDataModelToRuleGoModel } from '@src/pages/workflow/app-design/ut
 import { cloneDeep, } from 'lodash-es';
 import EventBus from '@src/utils/event-bus';
 import ChatListView from "@src/pages/workflow/chat-list-view/chat-list-view.vue";
+import SmartAiAssistant from "@src/pages/workflow/chat-list-view/smart-ai-assistant.vue";
 import ToolButtons from '@src/pages/workflow/app-design-new/tool-buttons.vue';
 //import Assistant from '@src/assets/assistant.svg';
 import AiChatDrawer from '@src/pages/workflow/chat-list-view/ai-chat-drawer.vue';
+import { SchemaHistoryManager } from '@src/utils/schema-history-manager.js';
 
 const props = defineProps({
   modelValue: {
@@ -29,7 +31,12 @@ const toolButtons = ref({
   isSourceCodeVisible: false,
 });
 const isAiVisible = ref(false);
+const isAiAssistantVisible = ref(false); // 新增智能AI助手状态
 const isMiniMapVisible = ref(true); // 小地图显示状态
+const isMobile = ref(false); // 移动端检测
+
+// 初始化schema历史记录管理器
+const schemaHistoryManager = new SchemaHistoryManager();
 
 function handelDesignToJson() {
   const flowData = appDesignRef.value.getData();
@@ -92,15 +99,52 @@ function handelSourceCodeUpdate(newVal) {
 }
 
 /**
- * 处理图更新
- * @param {string} newVal 
+ * 处理设计器更新
  */
 function handleDesignUpdate(newVal) {
   try {
+    // 记录设计器的手动修改
+    if (val.value && JSON.stringify(newVal) !== JSON.stringify(val.value)) {
+      schemaHistoryManager.addRecord(
+        newVal,
+        'manual',
+        '手动修改流程图',
+        { 
+          manual: true,
+          timestamp: Date.now()
+        }
+      );
+    }
+    
     val.value = newVal;
     emit("update:modelValue", val.value);
   } catch (error) {
     console.error('Error in handleDesignUpdate:', error);
+  }
+}
+
+/**
+ * 处理手动操作的schema更新
+ */
+function handleManualSchemaUpdate(newVal) {
+  try {
+    // 记录手动修改
+    if (val.value && JSON.stringify(newVal) !== JSON.stringify(val.value)) {
+      schemaHistoryManager.addRecord(
+        newVal,
+        'manual',
+        '手动修改流程图',
+        { 
+          manual: true,
+          timestamp: Date.now()
+        }
+      );
+    }
+    
+    val.value = newVal;
+    emit("update:modelValue", val.value);
+  } catch (error) {
+    console.error('Error in handleManualSchemaUpdate:', error);
   }
 }
 
@@ -177,6 +221,47 @@ async function handleToggleMiniMap() {
     }
   } else {
     console.error('app-design-new：appDesignRef.value 或 toggleMiniMap 方法不存在');
+  }
+}
+
+/**
+ * 处理AI助手切换
+ */
+function handleToggleAiAssistant() {
+  console.log('app-design-new：handleToggleAiAssistant 被调用');
+  isAiAssistantVisible.value = !isAiAssistantVisible.value;
+  console.log('app-design-new：AI助手状态更新为:', isAiAssistantVisible.value);
+}
+
+/**
+ * 处理AI更新schema
+ */
+function handleAiSchemaUpdate(newSchema) {
+  console.log('app-design-new：收到AI的schema更新:', newSchema);
+  try {
+    // 记录AI修改
+    schemaHistoryManager.addRecord(
+      newSchema,
+      'ai',
+      'AI智能助手修改',
+      { 
+        ai: true,
+        timestamp: Date.now(),
+        previousSchema: JSON.parse(JSON.stringify(val.value))
+      }
+    );
+    
+    val.value = newSchema;
+    emit("update:modelValue", val.value);
+    
+    // 延迟更新画布，确保数据同步
+    setTimeout(() => {
+      handelJsonToDesign();
+    }, 200);
+    
+    console.log('app-design-new：schema更新成功，已保存到历史记录');
+  } catch (error) {
+    console.error('app-design-new：应用AI schema更新失败:', error);
   }
 }
 
@@ -374,6 +459,26 @@ watch(
 
 onMounted(async () => {
   try {
+    // 检测移动端
+    const checkMobile = () => {
+      isMobile.value = window.innerWidth <= 768;
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    // 初始化schema历史记录管理器
+    if (val.value) {
+      schemaHistoryManager.addRecord(
+        val.value,
+        'initial',
+        '初始化画布状态',
+        { 
+          initialization: true,
+          timestamp: Date.now()
+        }
+      );
+    }
+    
     // 等待DOM完全挂载
     await nextTick();
     
@@ -424,35 +529,353 @@ defineExpose({
 
 </script>
 <template>
-  <div class="flex flex-row h-full relative">
-    <div v-if="toolButtons.isFlowVisible" class="flex-1 overflow-hidden">
-      <app-design :model-value="val" @update:model-value="handleDesignUpdate" ref="appDesignRef" />
+  <!-- 当AI助手打开时，主内容区域自适应调整 -->
+  <div class="app-design-container" :class="{ 'ai-assistant-open': isAiAssistantVisible }">
+    <!-- 主内容区域 -->
+    <div class="main-content">
+      <div v-if="toolButtons.isFlowVisible" class="content-panel flow-panel">
+        <app-design :model-value="val" @update:model-value="handleDesignUpdate" ref="appDesignRef" />
+      </div>
+      <div v-if="toolButtons.isSourceCodeVisible" class="content-panel code-panel">
+        <app-source-code :model-value="val" @update:model-value="handelSourceCodeUpdate" ref="appSourceCodeRef" />
+      </div>
+      <div v-if="false" class="content-panel chat-panel">
+        <chat-list-view class="flex-1" />
+      </div>
     </div>
-    <div v-if="toolButtons.isSourceCodeVisible" class="flex-1 overflow-hidden">
-      <app-source-code :model-value="val" @update:model-value="handelSourceCodeUpdate" ref="appSourceCodeRef" />
-    </div>
-    <div v-if="false" class="flex flex-1 overflow-hidden">
-      <chat-list-view class="flex-1" />
-    </div>
+    
+    <!-- 工具栏 -->
     <tool-buttons 
       v-model="toolButtons" 
       :is-mini-map-visible="isMiniMapVisible"
+      :is-ai-assistant-visible="isAiAssistantVisible"
       @optimize-layout="handleOptimizeLayout" 
       @toggle-minimap="handleToggleMiniMap"
-      class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50" 
+      @toggle-ai-assistant="handleToggleAiAssistant"
+      class="floating-toolbar" 
     />
-    <!--20250507暂时注释掉ai助手-->
-    <!-- <div @click="isAiVisible = true" class="absolute bottom-24 right-10 size-[50px] flex justify-center items-center rounded-full bg-white cursor-pointer border">
-      <el-icon :size="28">
-        <Assistant />
-      </el-icon>
-    </div> -->
+    
+    <!-- AI助手侧边栏 -->
+    <transition name="sidebar-slide">
+      <div 
+        v-if="isAiAssistantVisible" 
+        class="ai-sidebar"
+        :class="{ 'sidebar-mobile': isMobile }"
+      >
+        <!-- 侧边栏头部 -->
+        <div class="sidebar-header">
+          <div class="header-content">
+            <div class="header-icon">
+              <el-icon :size="22" class="text-emerald-600">
+                <el-icon-chat-line-round />
+              </el-icon>
+            </div>
+            <div class="header-text">
+              <h3 class="header-title">AI智能助手</h3>
+              <p class="header-subtitle">实时修改流程图配置</p>
+            </div>
+          </div>
+          <el-button 
+            size="small" 
+            circle 
+            @click="isAiAssistantVisible = false"
+            class="close-btn"
+          >
+            <el-icon><el-icon-close /></el-icon>
+          </el-button>
+        </div>
+        
+        <!-- AI助手组件 -->
+        <div class="sidebar-body">
+          <smart-ai-assistant 
+            :current-schema="val" 
+            :on-schema-update="handleAiSchemaUpdate"
+            :schema-history-manager="schemaHistoryManager"
+          />
+        </div>
+      </div>
+    </transition>
+    
+    <!-- 移动端遮罩 -->
+    <transition name="overlay-fade">
+      <div 
+        v-if="isAiAssistantVisible && isMobile" 
+        class="mobile-overlay"
+        @click="isAiAssistantVisible = false"
+      ></div>
+    </transition>
+    
+    <!-- 原有的AI聊天抽屉（保留兼容性） -->
     <ai-chat-drawer v-model="isAiVisible" />
   </div>
 </template>
 <style scoped>
-.app-split-screen {
+.app-design-container {
+  height: 100%;
+  position: relative;
+  display: flex;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 主内容区域 */
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-assistant-open .main-content {
+  margin-right: 420px;
+}
+
+.content-panel {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 工具栏样式 */
+.floating-toolbar {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  transition: all 0.3s ease;
+}
+
+.ai-assistant-open .floating-toolbar {
+  left: calc(50% - 210px); /* 向左偏移侧边栏宽度的一半 */
+}
+
+/* AI侧边栏样式 */
+.ai-sidebar {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 420px;
+  height: 100%;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-left: 1px solid #e2e8f0;
+  box-shadow: 
+    -8px 0 32px rgba(0, 0, 0, 0.12),
+    -4px 0 16px rgba(0, 0, 0, 0.08);
+  z-index: 50;
   display: flex;
   flex-direction: column;
+  backdrop-filter: blur(20px);
+}
+
+/* 侧边栏头部 */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #f0fdfa 0%, #ecfdf5 100%);
+  border-bottom: 1px solid #d1fae5;
+  backdrop-filter: blur(10px);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  color: white;
+}
+
+.header-text {
+  flex: 1;
+}
+
+.header-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #065f46;
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #047857;
+  opacity: 0.8;
+  line-height: 1.2;
+}
+
+.close-btn {
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  color: #ef4444;
+  border-color: #fca5a5;
+  background: #fef2f2;
+  transform: scale(1.05);
+}
+
+/* 侧边栏主体 */
+.sidebar-body {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 移动端适配 */
+.sidebar-mobile {
+  width: 100vw;
+  box-shadow: none;
+  border-left: none;
+}
+
+.mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 40;
+  backdrop-filter: blur(4px);
+}
+
+/* 过渡动画 */
+.sidebar-slide-enter-active,
+.sidebar-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-slide-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.sidebar-slide-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.overlay-fade-enter-active,
+.overlay-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
+  opacity: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .ai-sidebar {
+    width: 380px;
+  }
+  
+  .ai-assistant-open .main-content {
+    margin-right: 380px;
+  }
+  
+  .ai-assistant-open .floating-toolbar {
+    left: calc(50% - 190px);
+  }
+}
+
+@media (max-width: 768px) {
+  .ai-assistant-open .main-content {
+    margin-right: 0;
+  }
+  
+  .ai-assistant-open .floating-toolbar {
+    left: 50%;
+  }
+  
+  .sidebar-header {
+    padding: 16px 20px;
+  }
+  
+  .header-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .header-title {
+    font-size: 15px;
+  }
+  
+  .header-subtitle {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar-header {
+    padding: 14px 16px;
+  }
+  
+  .header-content {
+    gap: 10px;
+  }
+  
+  .header-icon {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .header-title {
+    font-size: 14px;
+  }
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .ai-sidebar {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-left-color: #374151;
+  }
+  
+  .sidebar-header {
+    background: linear-gradient(135deg, #064e3b 0%, #022c22 100%);
+    border-bottom-color: #065f46;
+  }
+  
+  .header-title {
+    color: #d1fae5;
+  }
+  
+  .header-subtitle {
+    color: #a7f3d0;
+  }
+  
+  .close-btn {
+    color: #9ca3af;
+    border-color: #4b5563;
+    background: rgba(31, 41, 55, 0.8);
+  }
+  
+  .close-btn:hover {
+    color: #f87171;
+    border-color: #ef4444;
+    background: #7f1d1d;
+  }
+  
+  .mobile-overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
 }
 </style>
