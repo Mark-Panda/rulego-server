@@ -115,6 +115,8 @@ function render() {
 - `/src/pages/workflow/app-design-new/app-design-new.vue` - 主要修复逻辑
 - `/src/pages/workflow/app-design/app-design.vue` - render方法优化
 - `/src/pages/workflow/app-design/flow-view.vue` - 方法暴露
+- `/src/utils/anchor-update-manager.js` - 新增锚点更新管理器
+- `/src/utils/__tests__/anchor-update-manager.test.js` - 锚点更新管理器测试文件
 
 ## 测试建议
 
@@ -135,6 +137,6 @@ function render() {
 
 ## 后续优化
 
-1. 可考虑将锚点更新逻辑封装为独立的工具类
-2. 添加更多节点类型的锚点更新支持
-3. 优化更新性能，减少不必要的DOM操作
+1. **封装独立的锚点更新工具类**：已创建[AnchorUpdateManager](file:///Users/yangcong1/learnProject/rulego-server/ui/src/utils/anchor-update-manager.js#L12-L388)统一管理锚点更新逻辑
+2. **添加更多节点类型的锚点更新支持**：已支持switch、msg-type-switch、endpoint、for、fork等多种节点类型
+3. **优化更新性能，减少不必要的DOM操作**：通过缓存机制和批量更新策略优化性能

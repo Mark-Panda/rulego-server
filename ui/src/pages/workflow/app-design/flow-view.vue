@@ -167,6 +167,33 @@ function handleNodeDrop({ data }) {
 }
 
 /**
+ * 处理节点新增事件
+ */
+function handleNodeAdd({ data }) {
+  console.log('检测到新增节点:', data);
+  // 新增节点后更新锚点配置
+  setTimeout(() => {
+    try {
+      updateNodePropertiesAnchorsById(data.id);
+      updateNodePropertiesAnchorsYById(data.id);
+      updateNodePropertiesHeightById(data.id);
+      
+      // 延迟更新连线
+      setTimeout(() => {
+        updateNodeConnectedEdges(data.id);
+        
+        // 触发数据更新到父组件
+        setTimeout(() => {
+          logicflowNodeMouseUp.emit({ data, type: 'node:add' });
+        }, 100);
+      }, 50);
+    } catch (error) {
+      console.warn('新增节点后更新锚点时出错:', error);
+    }
+  }, 100);
+}
+
+/**
  * 更新指定节点的所有连线
  */
 function updateNodeConnectedEdges(nodeId) {
@@ -627,6 +654,8 @@ function initFlow() {
     // 添加节点拖动相关事件监听
     lf.on('node:drag', handleNodeDrag);
     lf.on('node:drop', handleNodeDrop);
+    // 添加节点新增事件监听
+    lf.on('node:add', handleNodeAdd);
 
     flowNodes.forEach((node) => {
       register(node, lf);
@@ -689,6 +718,11 @@ function initFlow() {
     });
 
     lf.render(flowData.value);
+
+    // 设置LogicFlow实例到锚点更新管理器
+    if (typeof anchorUpdateManager?.setLogicFlowInstance === 'function') {
+      anchorUpdateManager.setLogicFlowInstance(lf);
+    }
 
     // 延迟显示小地图，确保渲染完成
     setTimeout(() => {
@@ -1156,6 +1190,7 @@ onBeforeUnmount(() => {
         lf.off('blank:click', flowBlankClickHandler);
         lf.off('node:drag', handleNodeDrag);
         lf.off('node:drop', handleNodeDrop);
+        lf.off('node:add', handleNodeAdd);
         
         // 清理总线事件
         if (jumpToNodeBus && typeof jumpToNodeBus.off === 'function') {

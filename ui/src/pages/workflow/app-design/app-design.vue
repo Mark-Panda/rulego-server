@@ -4,6 +4,7 @@ import { useResizeObserver, watchPausable } from '@vueuse/core';
 import { cloneDeep, isUndefined } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import EventBus from '@src/utils/event-bus';
+import { anchorUpdateManager } from '@src/utils/anchor-update-manager.js';
 import {
   isEndpointNode,
   convertNodeType,
@@ -500,7 +501,7 @@ function render() {
   rerenderFlowData();
   flowViewRef.value.updateAllNodePropertiesHeight();
   
-  // 延迟更新所有节点的锚点配置，确保渲染完成后正确显示输出端点
+  // 使用优化后的锚点更新管理器
   setTimeout(() => {
     if (flowViewRef.value) {
       const lf = flowViewRef.value.getLf();
@@ -508,26 +509,25 @@ function render() {
         const graphData = lf.getGraphData();
         const nodes = graphData.nodes || [];
         
-        // 更新所有节点的锚点配置
-        nodes.forEach((nodeData) => {
-          try {
-            // 调用flow-view的锚点更新方法
-            flowViewRef.value.updateNodePropertiesAnchorsById?.(nodeData.id);
-          } catch (error) {
-            console.warn(`更新节点 ${nodeData.id} 锚点时出错:`, error);
-          }
+        // 使用锚点更新管理器批量更新
+        anchorUpdateManager.batchUpdateAnchors(lf, nodes, {
+          maxBatchSize: 8,
+          batchDelay: 25,
+          forceUpdate: false // 使用缓存优化
+        }).then(() => {
+          console.log('锚点管理器批量更新完成');
+          
+          // 更新锚点位置
+          setTimeout(() => {
+            nodes.forEach((nodeData) => {
+              try {
+                flowViewRef.value.updateNodePropertiesAnchorsYById?.(nodeData.id);
+              } catch (error) {
+                console.warn(`更新节点 ${nodeData.id} 锚点位置时出错:`, error);
+              }
+            });
+          }, 50);
         });
-        
-        // 再次延迟更新锚点位置
-        setTimeout(() => {
-          nodes.forEach((nodeData) => {
-            try {
-              flowViewRef.value.updateNodePropertiesAnchorsYById?.(nodeData.id);
-            } catch (error) {
-              console.warn(`更新节点 ${nodeData.id} 锚点位置时出错:`, error);
-            }
-          });
-        }, 100);
       }
     }
   }, 200);
@@ -585,6 +585,18 @@ async function toggleMiniMap() {
   } catch (error) {
     console.error('app-design：调用 flow-view toggleMiniMap 时出错:', error);
     return false;
+  }
+}
+
+function handleMouseup(evt) {
+  logicflowNodeMouseUp.emit(evt);
+  emit('mouseup', evt);
+  
+  // 处理节点新增事件，确保数据更新到父组件
+  if (evt?.type === 'node:add') {
+    setTimeout(() => {
+      handelDesignToJson();
+    }, 200);
   }
 }
 

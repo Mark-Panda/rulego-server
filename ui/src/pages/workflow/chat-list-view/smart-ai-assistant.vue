@@ -118,6 +118,7 @@ import { onMounted, reactive, ref, watch } from 'vue';
 import { BubbleList, Sender } from 'vue-element-plus-x';
 import { ElMessage } from 'element-plus';
 import SchemaHistoryPanel from '@src/components/schema-history/schema-history-panel.vue';
+import { anchorUpdateManager } from '@src/utils/anchor-update-manager.js';
 
 const props = defineProps({
   currentSchema: {

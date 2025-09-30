@@ -11,6 +11,7 @@ import ToolButtons from '@src/pages/workflow/app-design-new/tool-buttons.vue';
 //import Assistant from '@src/assets/assistant.svg';
 import AiChatDrawer from '@src/pages/workflow/chat-list-view/ai-chat-drawer.vue';
 import { SchemaHistoryManager } from '@src/utils/schema-history-manager.js';
+import { anchorUpdateManager } from '@src/utils/anchor-update-manager.js';
 
 const props = defineProps({
   modelValue: {
@@ -351,6 +352,7 @@ function updateAllEdgesPosition(lf) {
 /**
  * 强制更新所有节点的锚点
  * 解决AI修改schema后节点输出端点显示问题
+ * 使用优化后的锚点更新管理器
  */
 function forceUpdateAllNodeAnchors() {
   console.log('开始强制更新所有节点的锚点');
@@ -370,122 +372,26 @@ function forceUpdateAllNodeAnchors() {
     const graphData = lf.getGraphData();
     const nodes = graphData.nodes || [];
     
-    console.log(`找到 ${nodes.length} 个节点，开始更新锚点`);
+    console.log(`找到 ${nodes.length} 个节点，开始使用锚点管理器更新`);
     
-    // 遍历所有节点，更新锚点配置
-    nodes.forEach((nodeData, index) => {
+    // 使用锚点更新管理器批量更新
+    anchorUpdateManager.batchUpdateAnchors(lf, nodes, {
+      maxBatchSize: 10,
+      batchDelay: 30,
+      forceUpdate: true
+    }).then(() => {
+      console.log('锚点管理器批量更新完成');
+      
+      // 更新所有连线位置
       setTimeout(() => {
         try {
-          const nodeModel = lf.getNodeModelById(nodeData.id);
-          if (!nodeModel) {
-            console.warn(`节点 ${nodeData.id} 模型不存在`);
-            return;
-          }
-          
-          console.log(`更新节点 ${nodeData.id} (${nodeData.type}) 的锚点`);
-          
-          // 获取节点当前属性
-          const currentProperties = nodeModel.getProperties();
-          
-          // 根据节点类型和数据重新计算锚点
-          if (nodeData.type === 'switch') {
-            // Switch节点需要根据cases重新生成输出锚点
-            const cases = currentProperties?.formData?.cases || [];
-            const staticAnchors = currentProperties?.anchors?.filter(anchor => anchor.isStatic) || [];
-            const newAnchors = [...staticAnchors];
-            
-            // 为每个case添加输出锚点
-            cases.forEach((caseItem, caseIndex) => {
-              const anchorId = caseItem.label || `CASE ${caseIndex + 1}`;
-              newAnchors.push({
-                id: anchorId,
-                isStatic: false,
-                name: anchorId,
-                top: 0,
-                type: 'output'
-              });
-            });
-            
-            // 更新锚点配置
-            lf.setProperties(nodeData.id, {
-              ...currentProperties,
-              anchors: newAnchors
-            });
-            
-            console.log(`Switch节点 ${nodeData.id} 锚点更新完成，新锚点数量: ${newAnchors.length}`);
-          } else if (nodeData.type === 'msg-type-switch') {
-            // msg-type-switch节点需要根据routers重新生成输出锚点
-            const routers = currentProperties?.formData?.routers || [];
-            const staticAnchors = currentProperties?.anchors?.filter(anchor => anchor.isStatic) || [];
-            const newAnchors = [...staticAnchors];
-            
-            // 为每个router添加输出锚点
-            routers.forEach((router) => {
-              newAnchors.push({
-                id: router,
-                isStatic: false,
-                name: router,
-                top: 0,
-                type: 'output'
-              });
-            });
-            
-            // 更新锚点配置
-            lf.setProperties(nodeData.id, {
-              ...currentProperties,
-              anchors: newAnchors
-            });
-            
-            console.log(`MsgTypeSwitch节点 ${nodeData.id} 锚点更新完成，新锚点数量: ${newAnchors.length}`);
-          } else if (nodeData.type === 'endpoint') {
-            // endpoint节点需要根据routers重新生成输出锚点
-            const routers = currentProperties?.formData?.routers || [];
-            const staticAnchors = currentProperties?.anchors?.filter(anchor => anchor.isStatic) || [];
-            const newAnchors = [...staticAnchors];
-            
-            // 为每个router添加输出锚点
-            routers.forEach((router) => {
-              newAnchors.push({
-                id: router.path,
-                isStatic: false,
-                name: router.path,
-                top: 0,
-                type: 'output'
-              });
-            });
-            
-            // 更新锚点配置
-            lf.setProperties(nodeData.id, {
-              ...currentProperties,
-              anchors: newAnchors
-            });
-            
-            console.log(`Endpoint节点 ${nodeData.id} 锚点更新完成，新锚点数量: ${newAnchors.length}`);
-          }
-          
-          // 强制刷新节点显示
-          setTimeout(() => {
-            if (nodeModel.setProperties) {
-              const props = nodeModel.getProperties();
-              nodeModel.setProperties(props);
-            }
-          }, 50);
-          
+          updateAllEdgesPosition(lf);
+          console.log('所有节点锚点和连线更新完成');
         } catch (error) {
-          console.error(`更新节点 ${nodeData.id} 锚点时出错:`, error);
+          console.error('更新连线位置时出错:', error);
         }
-      }, index * 50); // 错开每个节点的更新时间，避免冲突
+      }, 100);
     });
-    
-    // 延迟更新所有连线位置
-    setTimeout(() => {
-      try {
-        updateAllEdgesPosition(lf);
-        console.log('所有节点锚点和连线更新完成');
-      } catch (error) {
-        console.error('更新连线位置时出错:', error);
-      }
-    }, nodes.length * 50 + 200);
     
   } catch (error) {
     console.error('强制更新节点锚点时出错:', error);
