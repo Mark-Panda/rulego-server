@@ -38,6 +38,14 @@ const isMobile = ref(false); // 移动端检测
 // 初始化schema历史记录管理器
 const schemaHistoryManager = new SchemaHistoryManager();
 
+// AI助手侧边栏宽度相关状态
+const aiSidebarWidth = ref(420); // 默认宽度420px
+const minSidebarWidth = 320; // 最小宽度
+const maxSidebarWidth = 800; // 最大宽度
+const isResizing = ref(false);
+const resizeStartX = ref(0);
+const resizeStartWidth = ref(0);
+
 function handelDesignToJson() {
   const flowData = appDesignRef.value.getData();
   const ruleGoModel = mapFlowDataModelToRuleGoModel(flowData, val.value);
@@ -231,6 +239,56 @@ function handleToggleAiAssistant() {
   console.log('app-design-new：handleToggleAiAssistant 被调用');
   isAiAssistantVisible.value = !isAiAssistantVisible.value;
   console.log('app-design-new：AI助手状态更新为:', isAiAssistantVisible.value);
+}
+
+/**
+ * 开始拖拽调整侧边栏宽度
+ */
+function handleResizeStart(event) {
+  if (isMobile.value) return; // 移动端不支持拖拽调整
+  
+  isResizing.value = true;
+  resizeStartX.value = event.clientX;
+  resizeStartWidth.value = aiSidebarWidth.value;
+  
+  // 添加全局事件监听
+  document.addEventListener('mousemove', handleResizeMove);
+  document.addEventListener('mouseup', handleResizeEnd);
+  
+  // 防止文本选中
+  document.body.style.userSelect = 'none';
+  document.body.style.cursor = 'col-resize';
+}
+
+/**
+ * 拖拽调整过程
+ */
+function handleResizeMove(event) {
+  if (!isResizing.value) return;
+  
+  const deltaX = resizeStartX.value - event.clientX; // 向左拖拽为正值
+  const newWidth = resizeStartWidth.value + deltaX;
+  
+  // 限制宽度范围
+  aiSidebarWidth.value = Math.max(minSidebarWidth, Math.min(maxSidebarWidth, newWidth));
+}
+
+/**
+ * 结束拖拽调整
+ */
+function handleResizeEnd() {
+  isResizing.value = false;
+  
+  // 移除全局事件监听
+  document.removeEventListener('mousemove', handleResizeMove);
+  document.removeEventListener('mouseup', handleResizeEnd);
+  
+  // 恢复样式
+  document.body.style.userSelect = '';
+  document.body.style.cursor = '';
+  
+  // 保存宽度到本地存储
+  localStorage.setItem('aiSidebarWidth', aiSidebarWidth.value.toString());
 }
 
 /**
@@ -466,6 +524,15 @@ onMounted(async () => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
+    // 恢复保存的AI助手侧边栏宽度
+    const savedWidth = localStorage.getItem('aiSidebarWidth');
+    if (savedWidth) {
+      const width = parseInt(savedWidth, 10);
+      if (width >= minSidebarWidth && width <= maxSidebarWidth) {
+        aiSidebarWidth.value = width;
+      }
+    }
+    
     // 初始化schema历史记录管理器
     if (val.value) {
       schemaHistoryManager.addRecord(
@@ -512,6 +579,10 @@ onBeforeUnmount(() => {
       clearTimeout(jsonToDocTimer);
       jsonToDocTimer = 0;
     }
+    
+    // 清理拖拽相关事件监听器
+    document.removeEventListener('mousemove', handleResizeMove);
+    document.removeEventListener('mouseup', handleResizeEnd);
     
     // 清理组件引用
     appDesignRef.value = null;
@@ -561,7 +632,17 @@ defineExpose({
         v-if="isAiAssistantVisible" 
         class="ai-sidebar"
         :class="{ 'sidebar-mobile': isMobile }"
+        :style="{ width: isMobile ? '100vw' : aiSidebarWidth + 'px' }"
       >
+        <!-- 拖拽手柄 -->
+        <div 
+          v-if="!isMobile"
+          class="resize-handle"
+          @mousedown="handleResizeStart"
+          :class="{ 'resizing': isResizing }"
+        >
+          <div class="resize-indicator"></div>
+        </div>
         <!-- 侧边栏头部 -->
         <div class="sidebar-header">
           <div class="header-content">
@@ -626,7 +707,7 @@ defineExpose({
 }
 
 .ai-assistant-open .main-content {
-  margin-right: 420px;
+  margin-right: v-bind('aiSidebarWidth + "px"');
 }
 
 .content-panel {
@@ -646,7 +727,7 @@ defineExpose({
 }
 
 .ai-assistant-open .floating-toolbar {
-  left: calc(50% - 210px); /* 向左偏移侧边栏宽度的一半 */
+  left: v-bind('"calc(50% - " + (aiSidebarWidth / 2) + "px)"'); /* 向左偏移侧边栏宽度的一半 */
 }
 
 /* AI侧边栏样式 */
@@ -654,8 +735,9 @@ defineExpose({
   position: absolute;
   right: 0;
   top: 0;
-  width: 420px;
   height: 100%;
+  min-width: v-bind('minSidebarWidth + "px"');
+  max-width: v-bind('maxSidebarWidth + "px"');
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-left: 1px solid #e2e8f0;
   box-shadow: 
@@ -737,6 +819,55 @@ defineExpose({
   overflow: hidden;
 }
 
+/* 拖拽手柄样式 */
+.resize-handle {
+  position: absolute;
+  left: -5px;
+  top: 0;
+  width: 10px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.resize-handle:hover .resize-indicator,
+.resize-handle.resizing .resize-indicator {
+  background: #3b82f6;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+}
+
+.resize-indicator {
+  width: 2px;
+  height: 60px;
+  background: #d1d5db;
+  border-radius: 1px;
+  transition: all 0.2s ease;
+}
+
+.resize-handle:hover .resize-indicator {
+  height: 80px;
+}
+
+.resize-handle.resizing .resize-indicator {
+  height: 100px;
+  background: #1d4ed8;
+}
+
+/* 拖拽状态样式 */
+.resize-handle.resizing {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* 全局拖拽状态 */
+body.resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
 /* 移动端适配 */
 .sidebar-mobile {
   width: 100vw;
@@ -782,20 +913,6 @@ defineExpose({
 }
 
 /* 响应式设计 */
-@media (max-width: 1200px) {
-  .ai-sidebar {
-    width: 380px;
-  }
-  
-  .ai-assistant-open .main-content {
-    margin-right: 380px;
-  }
-  
-  .ai-assistant-open .floating-toolbar {
-    left: calc(50% - 190px);
-  }
-}
-
 @media (max-width: 768px) {
   .ai-assistant-open .main-content {
     margin-right: 0;

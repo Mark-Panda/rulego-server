@@ -116,6 +116,17 @@
                 <el-icon :size="12"><el-icon-link /></el-icon>
                 {{ record.metadata.edgeCount }}连线
               </span>
+              <el-button 
+                v-if="canShowDiff(record)"
+                size="small" 
+                type="primary" 
+                text
+                @click.stop="handleShowDiff(record)"
+                class="diff-btn"
+              >
+                <el-icon :size="12"><el-icon-view /></el-icon>
+                查看差异
+              </el-button>
             </div>
           </div>
 
@@ -144,6 +155,88 @@
       style="display: none" 
       @change="handleFileImport"
     />
+    
+    <!-- Schema差异对比对话框 -->
+    <el-dialog 
+      v-model="diffDialogVisible" 
+      title="Schema 差异对比" 
+      width="90%"
+      :before-close="handleCloseDiffDialog"
+      class="diff-dialog"
+    >
+      <div class="diff-container">
+        <!-- 对比头部 -->
+        <div class="diff-header">
+          <div class="diff-info">
+            <div class="before-info">
+              <h4>🔴 修改前</h4>
+              <p class="version-info">
+                <span class="version">版本: {{ beforeRecord?.version || 'N/A' }}</span>
+                <span class="time">时间: {{ formatTime(beforeRecord?.timestamp) }}</span>
+              </p>
+            </div>
+            <div class="after-info">
+              <h4>🟢 修改后</h4>
+              <p class="version-info">
+                <span class="version">版本: {{ afterRecord?.version || 'N/A' }}</span>
+                <span class="time">时间: {{ formatTime(afterRecord?.timestamp) }}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 差异摘要 -->
+        <div class="diff-summary">
+          <h5>📈 修改统计</h5>
+          <div class="summary-stats">
+            <span class="stat-item added">新增: {{ diffStats.added }} 项</span>
+            <span class="stat-item modified">修改: {{ diffStats.modified }} 项</span>
+            <span class="stat-item removed">删除: {{ diffStats.removed }} 项</span>
+          </div>
+        </div>
+        
+        <!-- 差异内容 -->
+        <div class="diff-content">
+          <div class="changes-list">
+            <div v-for="change in detailedChanges" :key="change.path" class="change-item">
+              <div class="change-header">
+                <span class="change-type" :class="change.type">
+                  {{ getChangeTypeLabel(change.type) }}
+                </span>
+                <code class="change-path">{{ change.path }}</code>
+              </div>
+              <div class="change-content">
+                <div v-if="change.type === 'modified'" class="change-diff">
+                  <div class="old-value">
+                    <span class="label">原值:</span>
+                    <code>{{ formatValue(change.oldValue) }}</code>
+                  </div>
+                  <div class="new-value">
+                    <span class="label">新值:</span>
+                    <code>{{ formatValue(change.newValue) }}</code>
+                  </div>
+                </div>
+                <div v-else-if="change.type === 'added'" class="change-added">
+                  <span class="label">新增内容:</span>
+                  <code>{{ formatValue(change.value) }}</code>
+                </div>
+                <div v-else-if="change.type === 'removed'" class="change-removed">
+                  <span class="label">删除内容:</span>
+                  <code>{{ formatValue(change.value) }}</code>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="diffDialogVisible = false">关闭</el-button>
+          <el-button type="primary" @click="handleApplyBeforeSchema">恢复到修改前</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -165,6 +258,15 @@ const props = defineProps({
 const emit = defineEmits(['schema-change', 'undo', 'redo']);
 
 const fileInputRef = ref();
+
+// 差异对比相关状态
+const diffDialogVisible = ref(false);
+const beforeRecord = ref(null);
+const afterRecord = ref(null);
+const beforeSchema = ref(null);
+const afterSchema = ref(null);
+const detailedChanges = ref([]);
+const diffStats = ref({ added: 0, modified: 0, removed: 0 });
 
 // 历史记录数据
 const historyList = computed(() => {
@@ -199,6 +301,216 @@ const operationLabels = {
  */
 function getOperationLabel(operation) {
   return operationLabels[operation] || operation;
+}
+
+/**
+ * 检查是否可以显示差异
+ */
+function canShowDiff(record) {
+  if (!props.historyManager) return false;
+  
+  const currentIndex = historyList.value.findIndex(r => r.id === record.id);
+  // 只有非第一个记录才能显示差异
+  return currentIndex > 0;
+}
+
+/**
+ * 显示Schema差异
+ */
+function handleShowDiff(record) {
+  if (!props.historyManager) return;
+  
+  const currentIndex = historyList.value.findIndex(r => r.id === record.id);
+  if (currentIndex <= 0) return;
+  
+  // 获取当前记录和前一个记录
+  afterRecord.value = historyList.value[currentIndex];
+  beforeRecord.value = historyList.value[currentIndex - 1];
+  
+  afterSchema.value = afterRecord.value.schema;
+  beforeSchema.value = beforeRecord.value.schema;
+  
+  // 计算差异
+  calculateDifferences();
+  
+  // 显示对话框
+  diffDialogVisible.value = true;
+}
+
+/**
+ * 计算Schema差异
+ */
+function calculateDifferences() {
+  if (!beforeSchema.value || !afterSchema.value) return;
+  
+  const changes = [];
+  const stats = { added: 0, modified: 0, removed: 0 };
+  
+  // 比较节点变化
+  const beforeNodes = beforeSchema.value.metadata?.nodes || [];
+  const afterNodes = afterSchema.value.metadata?.nodes || [];
+  
+  const beforeNodeMap = new Map(beforeNodes.map(node => [node.id, node]));
+  const afterNodeMap = new Map(afterNodes.map(node => [node.id, node]));
+  
+  // 检查新增的节点
+  afterNodes.forEach(node => {
+    if (!beforeNodeMap.has(node.id)) {
+      changes.push({
+        type: 'added',
+        path: `metadata.nodes[${node.id}]`,
+        value: node,
+        description: `新增节点: ${node.name || node.type}`
+      });
+      stats.added++;
+    }
+  });
+  
+  // 检查删除的节点
+  beforeNodes.forEach(node => {
+    if (!afterNodeMap.has(node.id)) {
+      changes.push({
+        type: 'removed',
+        path: `metadata.nodes[${node.id}]`,
+        value: node,
+        description: `删除节点: ${node.name || node.type}`
+      });
+      stats.removed++;
+    }
+  });
+  
+  // 检查修改的节点
+  afterNodes.forEach(afterNode => {
+    const beforeNode = beforeNodeMap.get(afterNode.id);
+    if (beforeNode) {
+      const nodeChanges = compareObjects(beforeNode, afterNode, `metadata.nodes[${afterNode.id}]`);
+      if (nodeChanges.length > 0) {
+        changes.push(...nodeChanges);
+        stats.modified++;
+      }
+    }
+  });
+  
+  // 比较连线变化
+  const beforeConnections = beforeSchema.value.metadata?.connections || [];
+  const afterConnections = afterSchema.value.metadata?.connections || [];
+  
+  if (beforeConnections.length !== afterConnections.length) {
+    changes.push({
+      type: 'modified',
+      path: 'metadata.connections',
+      oldValue: `${beforeConnections.length} 个连线`,
+      newValue: `${afterConnections.length} 个连线`,
+      description: '连线数量变化'
+    });
+    stats.modified++;
+  }
+  
+  // 比较规则链基本信息
+  const ruleChainChanges = compareObjects(
+    beforeSchema.value.ruleChain, 
+    afterSchema.value.ruleChain, 
+    'ruleChain'
+  );
+  if (ruleChainChanges.length > 0) {
+    changes.push(...ruleChainChanges);
+    stats.modified++;
+  }
+  
+  detailedChanges.value = changes;
+  diffStats.value = stats;
+}
+
+/**
+ * 比较两个对象的差异
+ */
+function compareObjects(obj1, obj2, basePath = '') {
+  const changes = [];
+  const allKeys = new Set([...Object.keys(obj1 || {}), ...Object.keys(obj2 || {})]);
+  
+  for (const key of allKeys) {
+    const path = basePath ? `${basePath}.${key}` : key;
+    const val1 = obj1?.[key];
+    const val2 = obj2?.[key];
+    
+    if (val1 === undefined && val2 !== undefined) {
+      changes.push({
+        type: 'added',
+        path,
+        value: val2,
+        description: `新增属性: ${key}`
+      });
+    } else if (val1 !== undefined && val2 === undefined) {
+      changes.push({
+        type: 'removed',
+        path,
+        value: val1,
+        description: `删除属性: ${key}`
+      });
+    } else if (val1 !== val2) {
+      if (typeof val1 === 'object' && typeof val2 === 'object' && !Array.isArray(val1) && !Array.isArray(val2)) {
+        // 递归比较对象
+        changes.push(...compareObjects(val1, val2, path));
+      } else {
+        changes.push({
+          type: 'modified',
+          path,
+          oldValue: val1,
+          newValue: val2,
+          description: `修改属性: ${key}`
+        });
+      }
+    }
+  }
+  
+  return changes;
+}
+
+/**
+ * 获取变化类型标签
+ */
+function getChangeTypeLabel(type) {
+  const labels = {
+    'added': '新增',
+    'modified': '修改',
+    'removed': '删除'
+  };
+  return labels[type] || type;
+}
+
+/**
+ * 格式化值显示
+ */
+function formatValue(value) {
+  if (value === null) return 'null';
+  if (value === undefined) return 'undefined';
+  if (typeof value === 'string') return `"${value}"`;
+  if (typeof value === 'object') return JSON.stringify(value, null, 2);
+  return String(value);
+}
+
+/**
+ * 关闭差异对话框
+ */
+function handleCloseDiffDialog() {
+  diffDialogVisible.value = false;
+  beforeRecord.value = null;
+  afterRecord.value = null;
+  beforeSchema.value = null;
+  afterSchema.value = null;
+  detailedChanges.value = [];
+  diffStats.value = { added: 0, modified: 0, removed: 0 };
+}
+
+/**
+ * 应用修改前的Schema
+ */
+function handleApplyBeforeSchema() {
+  if (beforeSchema.value) {
+    emit('schema-change', beforeSchema.value);
+    ElMessage.success('已恢复到修改前的状态');
+    diffDialogVisible.value = false;
+  }
 }
 
 /**
@@ -577,6 +889,18 @@ onUnmounted(() => {
   color: #6b7280;
 }
 
+.diff-btn {
+  margin-left: 8px;
+  font-size: 11px;
+  padding: 2px 6px;
+  height: auto;
+  border-radius: 4px;
+}
+
+.diff-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
 .current-indicator {
   position: absolute;
   right: 8px;
@@ -633,6 +957,249 @@ onUnmounted(() => {
   .operation-icon {
     width: 28px;
     height: 28px;
+  }
+}
+
+/* 差异对比样式 */
+.diff-dialog :deep(.el-dialog) {
+  max-width: 95vw;
+  max-height: 90vh;
+}
+
+.diff-container {
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.diff-header {
+  padding: 16px 0;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 16px;
+}
+
+.diff-info {
+  display: flex;
+  gap: 32px;
+}
+
+.before-info,
+.after-info {
+  flex: 1;
+}
+
+.before-info h4,
+.after-info h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.version-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.version,
+.time {
+  margin: 0;
+}
+
+.diff-summary {
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.diff-summary h5 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.summary-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.stat-item {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.stat-item.added {
+  color: #059669;
+  background: #d1fae5;
+}
+
+.stat-item.modified {
+  color: #d97706;
+  background: #fef3c7;
+}
+
+.stat-item.removed {
+  color: #dc2626;
+  background: #fee2e2;
+}
+
+.diff-content {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.changes-list {
+  space-y: 12px;
+}
+
+.change-item {
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.change-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.change-type {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.change-type.added {
+  color: #059669;
+  background: #d1fae5;
+  border: 1px solid #10b981;
+}
+
+.change-type.modified {
+  color: #d97706;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+}
+
+.change-type.removed {
+  color: #dc2626;
+  background: #fee2e2;
+  border: 1px solid #ef4444;
+}
+
+.change-path {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 11px;
+  color: #6366f1;
+  background: #f1f5f9;
+  padding: 2px 4px;
+  border-radius: 3px;
+  border: 1px solid #e2e8f0;
+}
+
+.change-content {
+  font-size: 12px;
+}
+
+.change-diff {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.old-value,
+.new-value,
+.change-added,
+.change-removed {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.old-value {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.new-value {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.change-added {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.change-removed {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.label {
+  font-weight: 600;
+  color: #374151;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.old-value code,
+.new-value code,
+.change-added code,
+.change-removed code {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 11px;
+  background: transparent;
+  padding: 0;
+  border: none;
+  word-break: break-all;
+  white-space: pre-wrap;
+  color: inherit;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .diff-info {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .change-diff {
+    grid-template-columns: 1fr;
+  }
+  
+  .summary-stats {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .diff-dialog :deep(.el-dialog) {
+    width: 95%;
+    margin: 5vh auto;
   }
 }
 </style>
