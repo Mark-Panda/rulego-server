@@ -38,28 +38,6 @@ const menuItems = [
         icon: 'el-icon-video-play', 
         label: '运行日志',
         implemented: true
-      }
-    ]
-  },
-  {
-    title: '应用市场',
-    items: [
-      { 
-        index: 'app-market', 
-        icon: 'el-icon-box', 
-        label: '应用市场',
-        implemented: false
-      }
-    ]
-  },
-  {
-    title: '管理',
-    items: [
-      { 
-        index: 'share-node-list', 
-        icon: 'el-icon-connection', 
-        label: '授权配置',
-        implemented: true
       },
       { 
         index: 'components-installed', 
@@ -83,12 +61,6 @@ const menuItems = [
             implemented: true
           }
         ]
-      },
-      { 
-        index: 'system-manage', 
-        icon: 'el-icon-setting', 
-        label: '系统管理',
-        implemented: false
       }
     ]
   }
