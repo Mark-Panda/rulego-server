@@ -153,6 +153,13 @@ func NewRestServe(config config.Config) (endpointApi.HttpEndpoint, error) {
 	// 分页查询组件使用路由
 	restEndpoint.GET(controller.Rule.FindComponentUseRuleList(apiBasePath + "/componentUseRule/page"))
 
+	// 创建业务文档路由
+	restEndpoint.POST(controller.Doc.Create(apiBasePath + "/doc/create"))
+	// 获取业务文档列表路由
+	restEndpoint.GET(controller.Doc.List(apiBasePath + "/doc/list"))
+	// 编辑业务文档路由
+	restEndpoint.POST(controller.Doc.Edit(apiBasePath + "/doc/edit"))
+
 	if config.MCP.Enable {
 		restEndpoint.GET(controller.MCP.Handler(apiBasePath + "/mcp/:apiKey/sse"))
 		restEndpoint.POST(controller.MCP.Handler(apiBasePath + "/mcp/:apiKey/message"))
