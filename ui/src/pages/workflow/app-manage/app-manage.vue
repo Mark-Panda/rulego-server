@@ -48,7 +48,7 @@ const menuList = ref([
   },
   {
     key: APP_MANAGE_MENU_KEY.APP_INTEGRATION,
-    label: '应用集成',
+    label: '工作流集成',
     icon: 'el-icon-menu',
   },
 ]);

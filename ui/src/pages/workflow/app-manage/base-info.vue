@@ -18,7 +18,7 @@ const emit = defineEmits(['save']);
 
 const formRef = ref();
 const rules = ref({
-  name: [{ required: true, message: '应用名称不能为空', trigger: 'blur' }],
+  name: [{ required: true, message: '工作流名称不能为空', trigger: 'blur' }],
 });
 
 async function saveHandler() {
@@ -40,8 +40,8 @@ async function saveHandler() {
       label-position="top"
     >
       <el-form-item label="ID" prop="id">{{ formState.id }}</el-form-item>
-      <el-form-item label="应用名称" prop="name">
-        <el-input v-model="formState.name" placeholder="应用名称" />
+      <el-form-item label="工作流名称" prop="name">
+        <el-input v-model="formState.name" placeholder="工作流名称" />
       </el-form-item>
       <el-form-item label="调试模式" prop="debugMode">
         <el-switch
@@ -59,7 +59,7 @@ async function saveHandler() {
           v-model="formState.description"
           :autosize="{ minRows: 4, maxRows: 4 }"
           resize="none"
-          placeholder="应用描述"
+          placeholder="工作流描述"
         ></el-input>
       </el-form-item>
     </el-form>

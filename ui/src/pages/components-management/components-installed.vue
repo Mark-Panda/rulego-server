@@ -82,7 +82,7 @@ async function refreshTableData() {
     // 保存所有组件数据
     allComponentsData.value = processedData;
     
-    // 应用过滤和分页
+    // 工作流过滤和分页
     applyFilterAndPagination();
     
   } catch (error) {
@@ -95,7 +95,7 @@ async function refreshTableData() {
   }
 }
 
-// 应用过滤和分页
+// 工作流过滤和分页
 function applyFilterAndPagination() {
   // 根据搜索条件过滤数据
   let filteredData = allComponentsData.value;
@@ -113,7 +113,7 @@ function applyFilterAndPagination() {
   // 更新总数
   paginationState.value.total = filteredData.length;
   
-  // 应用分页
+  // 工作流分页
   const start = (paginationState.value.page - 1) * paginationState.value.size;
   const end = start + paginationState.value.size;
   tableData.value = filteredData.slice(start, end);

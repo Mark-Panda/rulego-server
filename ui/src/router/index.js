@@ -13,6 +13,11 @@ const routes = [
         component: () => import('@src/pages/workflow-list/workflow-list.vue'),
       },
       {
+        path: '/business-docs',
+        name: 'business-docs',
+        component: () => import('@src/pages/business-docs/business-docs.vue'),
+      },
+      {
         path: '/runtime-logs',
         name: 'runtime-logs',
         component: () => import('@src/pages/runtime-logs/runtime-logs.vue'),

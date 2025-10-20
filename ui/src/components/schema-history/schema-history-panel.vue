@@ -503,7 +503,7 @@ function handleCloseDiffDialog() {
 }
 
 /**
- * 应用修改前的Schema
+ * 工作流修改前的Schema
  */
 function handleApplyBeforeSchema() {
   if (beforeSchema.value) {

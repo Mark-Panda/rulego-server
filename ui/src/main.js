@@ -25,9 +25,9 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 
 app.use(ElementPlus).use(store).use(router);
 
-// 在应用启动后检查token有效性
+// 在工作流启动后检查token有效性
 app.mount('#app');
 
-// 在应用挂载后初始化用户store
+// 在工作流挂载后初始化用户store
 const userStore = useUserStore();
 userStore.checkTokenExpiry();

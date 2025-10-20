@@ -18,7 +18,7 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:9099',
+        target: 'http://127.0.0.1:9199',
         changeOrigin: true,
         secure: false,
         configure: (proxy, options) => {
@@ -28,13 +28,17 @@ export default defineConfig({
           proxy.on('proxyReq', (proxyReq, req, res) => {
             console.log('Sending Request to the Target:', req.method, req.url);
           });
-          proxy.on('proxyRes', (proxyRes, req, res) => {
+          proxy.on('proxyRes', (proxyRes, res, req) => {
+            // 添加CORS头以解决跨域问题
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
             console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
           });
         },
       },
       '/ws': {
-        target: 'ws://127.0.0.1:9099',
+        target: 'ws://127.0.0.1:9199',
         ws: true,
         changeOrigin: true,
       },

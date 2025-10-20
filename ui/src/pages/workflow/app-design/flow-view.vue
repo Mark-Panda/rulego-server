@@ -790,7 +790,7 @@ async function lfRender() {
       lf.addEdge(item);
     });
     
-    // 添加连线后立即更新路径，确保初始化时应用我们的自定义逻辑
+    // 添加连线后立即更新路径，确保初始化时工作流我们的自定义逻辑
     setTimeout(() => {
       updateAllEdgesPath();
     }, 100);

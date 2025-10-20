@@ -30,7 +30,13 @@ const menuItems = [
       { 
         index: 'workflow-list', 
         icon: 'el-icon-menu', 
-        label: '我的应用',
+        label: '工作流管理',
+        implemented: true
+      },
+      { 
+        index: 'business-docs', 
+        icon: 'el-icon-document', 
+        label: '业务文档管理',
         implemented: true
       },
       { 

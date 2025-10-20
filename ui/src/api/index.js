@@ -3,3 +3,4 @@ export * from '@src/api/module/rules';
 export * from '@src/api/module/components';
 export * from '@src/api/module/locales';
 export * from '@src/api/module/logs';
+export * from '@src/api/module/docs';

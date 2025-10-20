@@ -324,7 +324,7 @@ function handleAiSchemaUpdate(newSchema) {
     
     console.log('app-design-new：schema更新成功，已保存到历史记录');
   } catch (error) {
-    console.error('app-design-new：应用AI schema更新失败:', error);
+    console.error('app-design-new：工作流AI schema更新失败:', error);
   }
 }
 

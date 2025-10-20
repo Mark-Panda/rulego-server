@@ -314,7 +314,7 @@ async function handleSend(val) {
           );
         }
         
-        // 应用schema更新
+        // 工作流schema更新
         props.onSchemaUpdate(newSchema);
         
         // 添加成功提示消息
@@ -341,7 +341,7 @@ async function handleSend(val) {
         ElMessage.success('AI已成功修改流程图配置');
       } catch (error) {
         console.error('解析AI返回的schema失败:', error);
-        ElMessage.error('AI返回的配置格式有误，无法应用更改');
+        ElMessage.error('AI返回的配置格式有误，无法工作流更改');
       }
     }
 

@@ -118,13 +118,13 @@ onMounted(() => {
     <!-- 页面标题和操作按钮 -->
     <div class="flex flex-none items-center justify-between border-b border-gray-100 dark:border-gray-700 p-4">
       <div class="flex items-center">
-        <h1 class="text-xl font-medium text-gray-800 dark:text-gray-200">我的应用</h1>
-        <el-tag type="info" effect="plain" class="ml-2">{{ paginationState.total }} 个应用</el-tag>
+        <h1 class="text-xl font-medium text-gray-800 dark:text-gray-200">工作流管理</h1>
+        <el-tag type="info" effect="plain" class="ml-2">{{ paginationState.total }} 个工作流</el-tag>
       </div>
       <div class="flex items-center space-x-4">
         <div class="flex items-center space-x-3">
           <el-input
-            placeholder="搜索应用名称"
+            placeholder="搜索工作流名称"
             :clearable="true"
             style="width: 220px;"
             v-model="formState.keywords"
@@ -148,26 +148,26 @@ onMounted(() => {
         <div class="flex items-center space-x-3">
           <el-button type="primary" @click="openCreateAppModalHandler">
             <el-icon class="mr-1"><el-icon-plus /></el-icon>
-            <span>创建应用</span>
+            <span>创建工作流</span>
           </el-button>
           <el-button @click="importHandler">
             <el-icon class="mr-1"><el-icon-upload /></el-icon>
-            <span>导入应用</span>
+            <span>导入工作流</span>
           </el-button>
         </div>
       </div>
     </div>
     
-    <!-- 应用列表 -->
+    <!-- 工作流列表 -->
     <div class="flex-grow overflow-auto p-4">
       <el-scrollbar class="h-full w-full">
         <div v-if="data.length === 0" class="flex h-64 w-full items-center justify-center">
           <div class="text-center">
             <el-icon class="text-4xl text-gray-300 dark:text-gray-600"><el-icon-box /></el-icon>
-            <p class="mt-2 text-gray-500 dark:text-gray-400">暂无应用，点击"创建应用"开始</p>
+            <p class="mt-2 text-gray-500 dark:text-gray-400">暂无工作流，点击"创建工作流"开始</p>
             <el-button class="mt-4" type="primary" @click="openCreateAppModalHandler">
               <el-icon class="mr-1"><el-icon-plus /></el-icon>
-              <span>创建应用</span>
+              <span>创建工作流</span>
             </el-button>
           </div>
         </div>

@@ -17,11 +17,11 @@ const runDrawerRef = ref();
 const menuList = ref([
   {
     key: WORKFLOW_MENU_KEY.APP_MANAGE,
-    label: '应用管理',
+    label: '工作流管理',
   },
   {
     key: WORKFLOW_MENU_KEY.APP_DESIGN,
-    label: '应用设计',
+    label: '工作流设计',
   },
 ]);
 const menuActiveKey = ref(WORKFLOW_MENU_KEY.APP_MANAGE);
@@ -177,7 +177,7 @@ onMounted(() => {
         </el-menu>
       </div>
       <div class="flex flex-grow items-center justify-center overflow-auto">
-        {{ bakValue?.ruleChain?.name || '应用名称' }}
+        {{ bakValue?.ruleChain?.name || '工作流名称' }}
       </div>
       <div class="min-w-[204px] flex-none px-4">
         <template v-if="[WORKFLOW_MENU_KEY.APP_DESIGN].includes(menuActiveKey)">
@@ -195,11 +195,11 @@ onMounted(() => {
       </div>
     </div>
     <div class="flex-grow overflow-auto">
-      <!-- 应用管理 -->
+      <!-- 工作流管理 -->
       <app-manage v-if="menuActiveKey === WORKFLOW_MENU_KEY.APP_MANAGE"
         :base-info-form-state="formState.baseInfoFormState" :variable-state="formState.variableState"
         @save="saveHandler"/>
-      <!-- 应用设计 -->
+      <!-- 工作流设计 -->
       <app-design-new ref="appDesignNewRef" v-if="menuActiveKey === WORKFLOW_MENU_KEY.APP_DESIGN"
         v-model="flowData"/>
     </div>
