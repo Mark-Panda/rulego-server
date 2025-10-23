@@ -12,6 +12,7 @@ type Regulation struct {
 	Root        bool            `gorm:"column:root"`
 	Disabled    bool            `gorm:"column:disabled"`
 	RuleChainId string          `gorm:"column:rule_chain_id"`
+	RuleVersion int64           `gorm:"column:rule_version"`
 	Name        string          `gorm:"column:name"`
 	RuleConfig  string          `gorm:"column:rule_config"`
 	CreatedAt   *time.Time      `gorm:"column:created_at"`

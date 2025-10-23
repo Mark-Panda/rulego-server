@@ -8,6 +8,7 @@ CREATE TABLE "public"."regulation" (
     "disabled" boolean,
     "name" varchar(64) COLLATE "pg_catalog"."default",
     "rule_chain_id" varchar(64) COLLATE "pg_catalog"."default",
+    "rule_version" int4 NOT NULL DEFAULT 0,
     "rule_config" text DEFAULT null,
     "created_at" timestamptz(6) NOT NULL DEFAULT now(),
     "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
@@ -18,7 +19,7 @@ CREATE TABLE "public"."regulation" (
 
 COMMENT ON TABLE "public"."regulation" IS '规则配置表';
 
-CREATE UNIQUE INDEX regulation_rule_chain_id_unique_idx ON regulation(rule_chain_id);
+CREATE UNIQUE INDEX regulation_rule_chain_id_version_unique_idx ON regulation(rule_chain_id,rule_version);
 
 COMMENT ON COLUMN "public"."regulation"."id" IS '主键ID';
 COMMENT ON COLUMN "public"."regulation"."user_name" IS '用户名';
@@ -26,6 +27,7 @@ COMMENT ON COLUMN "public"."regulation"."root" IS '是否根节点';
 COMMENT ON COLUMN "public"."regulation"."disabled" IS '是否禁用';
 COMMENT ON COLUMN "public"."regulation"."name" IS '规则名称';
 COMMENT ON COLUMN "public"."regulation"."rule_chain_id" IS '规则ID';
+COMMENT ON COLUMN "public"."regulation"."rule_version" IS '版本号';
 COMMENT ON COLUMN "public"."regulation"."rule_config" IS '规则配置信息';
 COMMENT ON COLUMN "public"."regulation"."created_at" IS '创建时间';
 COMMENT ON COLUMN "public"."regulation"."updated_at" IS '更新时间';
