@@ -6,8 +6,8 @@ func (s *EventDao) SaveMdWorkFlow(mdWorkflow model.MdWorkflow) error {
 	return model.DBClient.Client.Create(&mdWorkflow).Error
 }
 
-func (s *EventDao) EditorMdWorkFlow() error {
-	return nil
+func (s *EventDao) EditorMdWorkFlow(mdId int64, updateInfo map[string]interface{}) error {
+	return model.DBClient.Client.Model(&model.MdWorkflow{}).Where("id = ?", mdId).Updates(updateInfo).Error
 }
 
 func (s *EventDao) GetMdWorkflowList(title string, current, size int) ([]*model.MdWorkflow, int64, error) {
@@ -20,10 +20,10 @@ func (s *EventDao) GetMdWorkflowList(title string, current, size int) ([]*model.
 	if err := model.DBClient.Client.Where(where).Order("created_at desc").Offset((current - 1) * size).Limit(size).Find(&result).Error; err != nil {
 		return result, 0, err
 	}
-	if err := model.DBClient.Client.Model(&model.RunLog{}).Where(where).Count(&total).Error; err != nil {
+	if err := model.DBClient.Client.Model(&model.MdWorkflow{}).Where(where).Count(&total).Error; err != nil {
 		return result, 0, err
 	}
-	return result, 0, nil
+	return result, total, nil
 }
 
 // 删除md工作流

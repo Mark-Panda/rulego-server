@@ -8,8 +8,8 @@ func (s *EventService) CreateMdWorkflow(info model.MdWorkflow) error {
 }
 
 // 编辑Md工作流
-func (s *EventService) EditMdWorkflow() error {
-	return s.EventDao.EditorMdWorkFlow()
+func (s *EventService) EditMdWorkflow(mdId int64, updateInfo map[string]interface{}) error {
+	return s.EventDao.EditorMdWorkFlow(mdId, updateInfo)
 }
 
 // 分页获取md工作流列表
