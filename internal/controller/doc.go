@@ -117,3 +117,22 @@ func (d *doc) List(url string) endpointApi.Router {
 		return true
 	}).End()
 }
+
+// GenerateWorkflow 业务文档生成工作流并关联生成的工作流
+func (d *doc) GenerateWorkflow(url string) endpointApi.Router {
+	return endpoint.NewRouter().From(url).Process(AuthProcess).Process(func(router endpointApi.Router, exchange *endpointApi.Exchange) bool {
+		msg := exchange.In.GetMsg()
+		mdId := msg.Metadata.GetValue("mdId")
+		chainId := msg.Metadata.GetValue("chainId")
+		if mdId == "" {
+			exchange.Out.SetStatusCode(http.StatusBadRequest)
+			exchange.Out.SetBody([]byte("mdId不能为空"))
+			return false
+		}
+		if err := service.EventServiceImpl.GenerateWorkflow(mdId, chainId); err != nil {
+			exchange.Out.SetStatusCode(http.StatusInternalServerError)
+			exchange.Out.SetBody([]byte(err.Error()))
+		}
+		return true
+	}).End()
+}

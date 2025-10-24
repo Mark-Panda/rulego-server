@@ -10,8 +10,9 @@ import (
 var EventServiceImpl *EventService
 
 type EventService struct {
-	EventDao *dao.EventDao
-	config   config.Config
+	EventDao          *dao.EventDao
+	config            config.Config
+	ruleEngineService *RuleEngineService
 }
 
 func NewEventService(config config.Config) (*EventService, error) {

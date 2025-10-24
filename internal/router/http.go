@@ -159,6 +159,8 @@ func NewRestServe(config config.Config) (endpointApi.HttpEndpoint, error) {
 	restEndpoint.GET(controller.Doc.List(apiBasePath + "/doc/list"))
 	// 编辑业务文档路由
 	restEndpoint.POST(controller.Doc.Edit(apiBasePath + "/doc/edit"))
+	// 业务文档生成工作流并关联生成的工作流
+	restEndpoint.POST(controller.Doc.GenerateWorkflow(apiBasePath + "/doc/generateWorkflow"))
 
 	if config.MCP.Enable {
 		restEndpoint.GET(controller.MCP.Handler(apiBasePath + "/mcp/:apiKey/sse"))
