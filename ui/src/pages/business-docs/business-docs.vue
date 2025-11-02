@@ -4,6 +4,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import * as Api from '@src/api';
 import DocEditorModal from './doc-editor-modal.vue';
 import DocViewer from './doc-viewer.vue';
+import router from '@src/router';
 
 const paginationState = ref({
   page: 1,
@@ -23,6 +24,13 @@ const viewerModalVisible = ref(false);
 
 // 当前编辑或查看的文档
 const currentDoc = ref({});
+
+// 生成工作流弹窗状态
+const generateDialogVisible = ref(false);
+const generateLoading = ref(false);
+const selectedChainId = ref('');
+const workflowOptions = ref([]);
+let generateSourceDoc = null;
 
 async function refreshData() {
   try {
@@ -113,6 +121,70 @@ async function handleSaveDoc(docData) {
   }
 }
 
+// 查看关联工作流
+function handleOpenWorkflow(chainId) {
+  if (!chainId) {
+    ElMessage.warning('该文档未关联工作流');
+    return;
+  }
+  router.push({ path: '/workflow', query: { id: chainId } });
+}
+
+// 打开生成工作流弹窗
+async function handleGenerateWorkflow(id) {
+  const doc = data.value.find(item => item.id === id);
+  if (!doc) return;
+  generateSourceDoc = doc;
+  selectedChainId.value = '';
+  await loadDeployedWorkflows();
+  generateDialogVisible.value = true;
+}
+
+// 加载已部署的工作流作为下拉选项
+async function loadDeployedWorkflows() {
+  try {
+    const res = await Api.getRules({ page: 1, size: 200 });
+    const items = Array.isArray(res?.items) ? res.items : [];
+    // 过滤已部署（未禁用）
+    const deployed = items.filter(it => it?.ruleChain && it.ruleChain.disabled === false);
+    workflowOptions.value = deployed.map(it => ({
+      label: it.ruleChain.name,
+      value: it.ruleChain.id,
+    }));
+  } catch (e) {
+    workflowOptions.value = [];
+  }
+}
+
+// 提交生成工作流执行
+async function submitGenerateWorkflow() {
+  if (!selectedChainId.value) {
+    ElMessage.warning('请选择工作流');
+    return;
+  }
+  try {
+    generateLoading.value = true;
+    let body = generateSourceDoc?.content || '';
+    let dataBody = body;
+    let headers = { 'Content-Type': 'application/json' };
+    // 尝试将content解析为JSON
+    try {
+      dataBody = body ? JSON.parse(body) : {};
+    } catch (err) {
+      // 解析失败则作为纯文本发送
+      headers = { 'Content-Type': 'text/plain' };
+      dataBody = body || '';
+    }
+    await Api.executeRules({ id: selectedChainId.value, msgType: 'json', data: dataBody, headers });
+    ElMessage.success('已触发工作流执行');
+    generateDialogVisible.value = false;
+  } catch (error) {
+    ElMessage.error('触发工作流执行失败');
+  } finally {
+    generateLoading.value = false;
+  }
+}
+
 onMounted(() => {
   refreshData();
 });
@@ -167,11 +239,23 @@ onMounted(() => {
           <el-table :data="data" style="width: 100%" v-loading="loading">
             <el-table-column prop="name" label="文档名称" />
             <el-table-column prop="description" label="描述" />
+            <el-table-column prop="chainName" label="关联工作流" />
             <el-table-column prop="createTime" label="创建时间" />
             <el-table-column label="操作">
               <template #default="scope">
                 <el-button size="small" @click="handleView(scope.row.id)">查看</el-button>
                 <el-button size="small" @click="handleEdit(scope.row.id)">编辑</el-button>
+                <el-button 
+                  v-if="scope.row.chainId"
+                  size="small" 
+                  type="primary" 
+                  @click="handleOpenWorkflow(scope.row.chainId)"
+                >查看工作流</el-button>
+                <el-button 
+                  size="small" 
+                  type="success" 
+                  @click="handleGenerateWorkflow(scope.row.id)"
+                >生成工作流</el-button>
                 <el-button size="small" type="danger" @click="handleDelete(scope.row.id, scope.row.name)">删除</el-button>
               </template>
             </el-table-column>
@@ -207,4 +291,38 @@ onMounted(() => {
     v-model:visible="viewerModalVisible"
     :doc-data="currentDoc"
   />
+
+  <!-- 生成工作流弹窗 -->
+  <el-dialog 
+    v-model="generateDialogVisible" 
+    title="生成工作流" 
+    width="520px" 
+    :close-on-click-modal="false"
+  >
+    <div>
+      <el-form label-width="100px">
+        <el-form-item label="选择工作流" required>
+          <el-select 
+            v-model="selectedChainId" 
+            placeholder="请选择已部署工作流" 
+            filterable 
+            style="width:100%"
+          >
+            <el-option 
+              v-for="opt in workflowOptions" 
+              :key="opt.value" 
+              :label="opt.label" 
+              :value="opt.value" 
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+    </div>
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="generateDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="generateLoading" @click="submitGenerateWorkflow">确定</el-button>
+      </span>
+    </template>
+  </el-dialog>
 </template>
