@@ -5,7 +5,6 @@ ADD . /root
 
 RUN mkdir -p bin/ && GOPROXY="https://goproxy.cn,direct"  go build -ldflags '-w -s -extldflags "-static" -X main.Version=$(VERSION)' -tags "with_extend,with_ai,musl" -o ./bin/ ./...
 # RUN mkdir -p bin/ && GOPROXY="https://goproxy.cn,direct"  go build -ldflags '-w -s -extldflags "-static" -X main.Version=$(VERSION)' -tags "with_extend,with_ai,with_ci,with_iot,with_etl,musl" -o ./bin/ ./...
-
 # RUN go mod download
 
 # 第三阶段: 最终镜像
