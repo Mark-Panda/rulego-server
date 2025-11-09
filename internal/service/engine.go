@@ -262,7 +262,13 @@ func (s *RuleEngineService) SaveAndLoad(chainId string, def []byte) error {
 	// 修改更新时间
 	s.fillAdditionalInfo(&ruleChain)
 
-	b, err := json.Marshal(ruleChain)
+	var allChain CustomRuleChain
+	err = json.Unmarshal(def, &allChain)
+	if err != nil {
+		return err
+	}
+
+	b, err := json.Marshal(allChain)
 	if err != nil {
 		return err
 	}
@@ -270,7 +276,7 @@ func (s *RuleEngineService) SaveAndLoad(chainId string, def []byte) error {
 	// if err = s.ruleDao.Save(s.username, chainId, b); err != nil {
 	// 	return err
 	// }
-	if err = s.ruleDao.SaveToDataBase(s.username, chainId, b); err != nil {
+	if err = s.ruleDao.SaveToDataBase(s.username, chainId, b, true); err != nil {
 		return err
 	}
 
@@ -332,7 +338,7 @@ func (s *RuleEngineService) SaveBaseInfo(chainId string, baseInfo types.RuleChai
 		}
 		def, _ := json.Format(ruleEngine.DSL())
 		// return s.ruleDao.Save(s.username, chainId, def)
-		return s.ruleDao.SaveToDataBase(s.username, chainId, def)
+		return s.ruleDao.SaveToDataBase(s.username, chainId, def, false)
 	} else {
 		return errors.New("找不到规则链：" + chainId)
 	}
@@ -360,7 +366,7 @@ func (s *RuleEngineService) SaveConfiguration(chainId string, key string, config
 			}
 			def, _ := json.Format(ruleEngine.DSL())
 			// return s.ruleDao.Save(s.username, chainId, def)
-			return s.ruleDao.SaveToDataBase(s.username, chainId, def)
+			return s.ruleDao.SaveToDataBase(s.username, chainId, def, false)
 		} else {
 			return errors.New("找不到规则链：" + chainId)
 		}
@@ -453,7 +459,7 @@ func (s *RuleEngineService) Undeploy(chainId string) error {
 	}
 	// 持久化规则链
 	// err = s.ruleDao.Save(s.username, chainId, b)
-	err = s.ruleDao.SaveToDataBase(s.username, chainId, b)
+	err = s.ruleDao.SaveToDataBase(s.username, chainId, b, false)
 	if err != nil {
 		return err
 	}
@@ -487,7 +493,7 @@ func (s *RuleEngineService) saveRuleChain(ruleChain types.RuleChain, whenErr err
 		return err
 	} else {
 		// return s.ruleDao.Save(s.username, ruleChain.RuleChain.ID, def)
-		return s.ruleDao.SaveToDataBase(s.username, ruleChain.RuleChain.ID, def)
+		return s.ruleDao.SaveToDataBase(s.username, ruleChain.RuleChain.ID, def, false)
 	}
 }
 func (s *RuleEngineService) GetEngine(chainId string) (types.RuleEngine, bool) {

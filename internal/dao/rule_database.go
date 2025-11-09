@@ -19,10 +19,10 @@ func NewRuleDaoToDataBase(config config.Config, username string) (*RuleDao, erro
 }
 
 // 保存或更新到数据库
-func (d *RuleDao) SaveToDataBase(username, chainId string, def []byte) error {
-	v, _ := json.Format(def)
-	// def 转成 types.RuleChain
-	var ruleChain types.RuleChain
+func (d *RuleDao) SaveToDataBase(username, chainId string, def []byte, isUpdateUI bool) error {
+	// v, _ := json.Format(def)
+	// def 转成 CustomRuleChain
+	var ruleChain CustomRuleChain
 	if err := json.Unmarshal(def, &ruleChain); err != nil {
 		return err
 	}
@@ -32,8 +32,22 @@ func (d *RuleDao) SaveToDataBase(username, chainId string, def []byte) error {
 		return gErr
 	}
 	if ruleConfigInfo != nil && ruleConfigInfo.RuleChainId != "" {
+		// 根据规则链ID查询一次原始数据不更新  FlowgramUI
+		if !isUpdateUI {
+			ruleConfig := ruleConfigInfo.RuleConfig
+			var ruleChainHaveUi CustomRuleChain
+			if err := json.Unmarshal([]byte(ruleConfig), &ruleChainHaveUi); err != nil {
+				return err
+			}
+			ruleChain.Metadata.FlowgramUI = ruleChainHaveUi.Metadata.FlowgramUI
+
+		}
+		haveUiDef, mErr := json.Marshal(ruleChain)
+		if mErr != nil {
+			return mErr
+		}
 		updateData := map[string]interface{}{
-			"rule_config": string(v),
+			"rule_config": string(haveUiDef),
 			"root":        ruleChain.RuleChain.Root,
 			"disabled":    ruleChain.RuleChain.Disabled,
 			"name":        ruleChain.RuleChain.Name,
@@ -49,7 +63,7 @@ func (d *RuleDao) SaveToDataBase(username, chainId string, def []byte) error {
 		Disabled:    ruleChain.RuleChain.Disabled,
 		Name:        ruleChain.RuleChain.Name,
 		RuleChainId: chainId,
-		RuleConfig:  string(v),
+		RuleConfig:  string(def),
 		CreatedAt:   &t,
 		UpdatedAt:   &t,
 	}
@@ -111,4 +125,9 @@ func (d *RuleDao) GetAll(username string) ([]types.RuleChain, error) {
 		ruleChains = append(ruleChains, ruleChainItem)
 	}
 	return ruleChains, nil
+}
+
+// 更新数据库规则链信息
+func (d *RuleDao) UpdateRegulationByRuleChainId(ruleChainId string, data map[string]interface{}) error {
+	return UpdateRegulationByRuleChainId(ruleChainId, data)
 }
