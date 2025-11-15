@@ -51,6 +51,10 @@ func (s *EventService) Get(username, chainId, snapshotId string) (types.RuleChai
 	return s.EventDao.GetByDataBase(username, chainId, snapshotId)
 }
 
+func (s *EventService) GetByMsgId(username, msgId string) (types.RuleChainRunSnapshot, error) {
+	return s.EventDao.GetByMsgId(username, msgId)
+}
+
 // CreateComponentUseRule 创建组件使用规则
 func (s *EventService) CreateComponentUseRule(r model.ComponentUseRule) error {
 	return s.EventDao.CreateComponentUseRule(r)

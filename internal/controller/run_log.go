@@ -130,3 +130,26 @@ func (c *log) WsNodeLogRouter(url string) endpointApi.Router {
 		return true
 	}).End()
 }
+
+func (c *log) GetRunLogByMsgId(url string) endpointApi.Router {
+	return endpoint.NewRouter().From(url).Process(AuthProcess).Process(func(router endpointApi.Router, exchange *endpointApi.Exchange) bool {
+		msg := exchange.In.GetMsg()
+		msgId := exchange.In.GetParam(constants.KeyMsgId)
+		username := msg.Metadata.GetValue(constants.KeyUsername)
+		var result interface{}
+		if v, err := service.EventServiceImpl.GetByMsgId(username, msgId); err != nil {
+			exchange.Out.SetStatusCode(http.StatusNotFound)
+			exchange.Out.SetBody([]byte(err.Error()))
+			return false
+		} else {
+			result = v
+		}
+		if v, err := json.Marshal(result); err != nil {
+			exchange.Out.SetStatusCode(http.StatusInternalServerError)
+			exchange.Out.SetBody([]byte(err.Error()))
+		} else {
+			exchange.Out.SetBody(v)
+		}
+		return true
+	}).End()
+}

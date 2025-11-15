@@ -220,6 +220,19 @@ func (s *EventDao) ListByDataBase(username, chainId string, current, size int, s
 	return snapshots, int(total), nil
 }
 
+func (s *EventDao) GetByMsgId(username, msgId string) (types.RuleChainRunSnapshot, error) {
+	var snapshot types.RuleChainRunSnapshot
+	var runLog model.RunLog
+	if err := model.DBClient.Client.Where("run_id = ?", msgId).First(&runLog).Error; err != nil {
+		return snapshot, err
+	}
+	snapshot, err := s.RunLogToRuleChainRunSnapshot(runLog)
+	if err != nil {
+		return snapshot, err
+	}
+	return snapshot, nil
+}
+
 func (s *EventDao) Get(username, chainId, snapshotId string) (types.RuleChainRunSnapshot, error) {
 	var snapshot types.RuleChainRunSnapshot
 	var paths = []string{s.config.DataDir, constants.DirWorkflows}

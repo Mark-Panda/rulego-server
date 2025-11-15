@@ -134,7 +134,9 @@ func NewRestServe(config config.Config) (endpointApi.HttpEndpoint, error) {
 	restEndpoint.GET(controller.Log.GetDebugLogs(apiBasePath + "/" + moduleLogs + "/debug"))
 	//获取规则链运行日志列表
 	restEndpoint.GET(controller.Log.List(apiBasePath + "/" + moduleLogs + "/runs"))
-	//获取规则链运行日志详情
+	// 获取指定msgId的运行日志详情
+	restEndpoint.GET(controller.Log.GetRunLogByMsgId(apiBasePath + "/" + moduleLogs + "/runs/msgId"))
+	// 删除指定规则链运行日志详情
 	restEndpoint.DELETE(controller.Log.Delete(apiBasePath + "/" + moduleLogs + "/runs"))
 
 	restEndpoint.GET(controller.Locale.Locales(apiBasePath + "/" + moduleLocales))
