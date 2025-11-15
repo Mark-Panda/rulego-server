@@ -23,7 +23,7 @@ type MultiNodeOutput struct {
 
 type MultiNodeOutputConfiguration struct {
 	// NodeId 目标节点ID，获取该节点的输出消息
-	NodeId []string
+	NodeIds []string `json:"nodeIds"`
 }
 
 func (c *MultiNodeOutput) New() types.Node {
@@ -58,7 +58,7 @@ func (c *MultiNodeOutput) Init(ruleConfig types.Config, configuration types.Conf
 	}
 	self := base.NodeUtils.GetSelfDefinition(configuration)
 	// Establish node dependency to enable target node output caching and access
-	for _, nodeId := range c.Config.NodeId {
+	for _, nodeId := range c.Config.NodeIds {
 		chainCtx.AddNodeDependency(self.Id, nodeId)
 	}
 	return err
@@ -71,7 +71,7 @@ func (c *MultiNodeOutput) OnMsg(ctx types.RuleContext, msg types.RuleMsg) {
 	resultData := map[string]interface{}{}
 	isSuccess := true
 	errStr := ""
-	for _, nodeId := range c.Config.NodeId {
+	for _, nodeId := range c.Config.NodeIds {
 		if targetMsg, exists := ctx.GetNodeRuleMsg(nodeId); exists {
 			// 合并多节点返回数据
 			resultData[nodeId] = targetMsg.GetData()
