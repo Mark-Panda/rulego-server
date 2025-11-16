@@ -38,9 +38,9 @@ func (d *ComponentDao) Get(username, chainId string) ([]byte, error) {
 	return d.ruleDao.FindComponentRegulationByRuleChainId(chainId)
 }
 
-func (d *ComponentDao) GetAsRuleChain(username, chainId string) (CustomRuleChain, error) {
+func (d *ComponentDao) GetAsRuleChain(username, chainId string) (types.RuleChain, error) {
 	// 根据ID加载规则链DSL数据
-	var ruleChain CustomRuleChain
+	var ruleChain types.RuleChain
 	data, err := d.Get(username, chainId)
 	if err != nil {
 		return ruleChain, err
@@ -53,7 +53,7 @@ func (d *ComponentDao) GetAsRuleChain(username, chainId string) (CustomRuleChain
 }
 
 func (d *ComponentDao) Save(username, chainId string, def []byte) error {
-	var ruleChain CustomRuleChain
+	var ruleChain types.RuleChain
 	if err := json.Unmarshal(def, &ruleChain); err != nil {
 		return err
 	}

@@ -37,8 +37,7 @@ type RuleMeta struct {
 // 保存或更新到数据库
 func (d *RuleDao) SaveToComponentRegulation(username, chainId string, def []byte) error {
 	v, _ := json.Format(def)
-	// def 转成 CustomRuleChain
-	var ruleChain CustomRuleChain
+	var ruleChain types.RuleChain
 	if err := json.Unmarshal(def, &ruleChain); err != nil {
 		return err
 	}
@@ -113,14 +112,14 @@ func (d *RuleDao) ListToComponentRegulation(username, keywords string, root *boo
 	return ruleChains, totalCount, nil
 }
 
-func (d *RuleDao) GetAllComponentRegulation(username string) ([]CustomRuleChain, error) {
-	var ruleChains []CustomRuleChain
+func (d *RuleDao) GetAllComponentRegulation(username string) ([]types.RuleChain, error) {
+	var ruleChains []types.RuleChain
 	list, err := GetAllLoadComponentRegulation(username)
 	if err != nil {
 		return nil, err
 	}
 	for _, item := range list {
-		var ruleChainItem CustomRuleChain
+		var ruleChainItem types.RuleChain
 		if err := json.Unmarshal([]byte(item.RuleConfig), &ruleChainItem); err != nil {
 			continue
 		}

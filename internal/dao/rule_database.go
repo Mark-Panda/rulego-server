@@ -21,8 +21,7 @@ func NewRuleDaoToDataBase(config config.Config, username string) (*RuleDao, erro
 // 保存或更新到数据库
 func (d *RuleDao) SaveToDataBase(username, chainId string, def []byte, isUpdateUI bool) error {
 	// v, _ := json.Format(def)
-	// def 转成 CustomRuleChain
-	var ruleChain CustomRuleChain
+	var ruleChain types.RuleChain
 	if err := json.Unmarshal(def, &ruleChain); err != nil {
 		return err
 	}
@@ -32,16 +31,6 @@ func (d *RuleDao) SaveToDataBase(username, chainId string, def []byte, isUpdateU
 		return gErr
 	}
 	if ruleConfigInfo != nil && ruleConfigInfo.RuleChainId != "" {
-		// 根据规则链ID查询一次原始数据不更新  FlowgramUI
-		if !isUpdateUI {
-			ruleConfig := ruleConfigInfo.RuleConfig
-			var ruleChainHaveUi CustomRuleChain
-			if err := json.Unmarshal([]byte(ruleConfig), &ruleChainHaveUi); err != nil {
-				return err
-			}
-			ruleChain.Metadata.FlowgramUI = ruleChainHaveUi.Metadata.FlowgramUI
-
-		}
 		haveUiDef, mErr := json.Marshal(ruleChain)
 		if mErr != nil {
 			return mErr

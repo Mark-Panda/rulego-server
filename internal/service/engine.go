@@ -262,7 +262,7 @@ func (s *RuleEngineService) SaveAndLoad(chainId string, def []byte) error {
 	// 修改更新时间
 	s.fillAdditionalInfo(&ruleChain)
 
-	var allChain CustomRuleChain
+	var allChain types.RuleChain
 	err = json.Unmarshal(def, &allChain)
 	if err != nil {
 		return err
