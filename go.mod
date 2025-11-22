@@ -7,6 +7,7 @@ toolchain go1.24.1
 require (
 	github.com/dop251/goja v0.0.0-20231024180952-594410467bc6
 	github.com/dromara/carbon/v2 v2.6.8
+	github.com/go-resty/resty/v2 v2.16.5
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/mark3labs/mcp-go v0.18.0
